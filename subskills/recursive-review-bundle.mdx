@@ -1,0 +1,107 @@
+---
+title: "Review Bundle"
+description: "Package a canonical context bundle before delegating a Phase 3.5 review or audit."
+---
+
+## Overview
+
+The `recursive-review-bundle` subskill generates a durable, reproducible context bundle before you delegate an audit or review to a subagent. Without a canonical bundle, delegated reviews are context-free and cannot be accepted by the recursive-mode workflow.
+
+```bash
+npx skills add try-works/recursive-mode --skill recursive-review-bundle --full-depth
+```
+
+## When to Use
+
+Use this subskill whenever you are delegating a Phase 3.5 code review, test review, or other audit to a subagent. Generate the bundle before dispatching the reviewer, and refresh it after any material repairs or scope changes.
+
+<Note>
+This subskill packages the handoff context. It does not replace the canonical workflow in `/.recursive/RECURSIVE.md` and it does not perform the review itself.
+</Note>
+
+## The Canonical Scripts
+
+Two scripts ship with recursive-mode for generating review bundles:
+
+- `scripts/recursive-review-bundle.py` — use when Python is available
+- `scripts/recursive-review-bundle.ps1` — use when the delegated path is PowerShell-oriented
+
+Prefer the Python script when both toolchains are available.
+
+## Minimum Required Inputs
+
+Every bundle invocation must include all of the following:
+
+| Input | Description |
+|-------|-------------|
+| `repo root` | Path to the repository root |
+| `run id` | The current recursive-mode run ID |
+| `phase name` | The phase being reviewed (e.g., `03.5 Code Review`) |
+| `reviewer role` | The canonical role (e.g., `code-reviewer`) |
+| `artifact path` | Path to the artifact being reviewed |
+| `upstream artifacts` | Exact paths to all artifacts the reviewer must re-read |
+| `audit questions` | The specific questions the review must answer |
+| `required output shape` | The format the reviewer's output must take |
+
+Add evidence refs or addenda paths explicitly when they are relevant — the bundle generator will also auto-discover applicable addenda and skill-memory refs.
+
+## Commands
+
+<CodeGroup>
+
+```bash Python
+python scripts/recursive-review-bundle.py \
+  --repo-root . \
+  --run-id "<run-id>" \
+  --phase "03.5 Code Review" \
+  --role code-reviewer \
+  --artifact-path "/.recursive/run/<run-id>/03.5-code-review.md" \
+  --upstream-artifact "/.recursive/run/<run-id>/00-requirements.md" \
+  --upstream-artifact "/.recursive/run/<run-id>/02-to-be-plan.md" \
+  --audit-question "Which R# remain incomplete?" \
+  --required-output "Findings ordered by severity"
+```
+
+```powershell PowerShell
+pwsh -NoProfile -File scripts/recursive-review-bundle.ps1 `
+  -RepoRoot . `
+  -RunId "<run-id>" `
+  -Phase "03.5 Code Review" `
+  -Role code-reviewer `
+  -ArtifactPath "/.recursive/run/<run-id>/03.5-code-review.md" `
+  -UpstreamArtifact "/.recursive/run/<run-id>/00-requirements.md","/.recursive/run/<run-id>/02-to-be-plan.md" `
+  -AuditQuestion "Which R# remain incomplete?" `
+  -RequiredOutput "Findings ordered by severity"
+```
+
+</CodeGroup>
+
+## Acceptance Rules
+
+After generating the bundle, follow these rules before and after delegation:
+
+<Steps>
+  <Step title="Record the bundle path">
+    Record `Review Bundle Path` in the delegated phase artifact. Without a recorded path, the phase cannot be considered properly delegated.
+  </Step>
+  <Step title="Require the reviewer to cite the bundle">
+    The reviewer must reference the bundle path, name the upstream artifacts they re-read, cite relevant addenda, reference the changed files or code they reviewed, and provide a final verdict. A bare bundle file is not proof of review quality — the written review must use the bundle contents.
+  </Step>
+  <Step title="Refresh after repairs">
+    If material repairs or scope changes occur after the bundle was generated, regenerate it before sending to the reviewer. A stale bundle invalidates the review.
+  </Step>
+</Steps>
+
+<Warning>
+Do not treat a delegated review as accepted if the reviewer's output does not cite the bundle, upstream artifacts, and changed files. Generic summaries with no grounded findings must be rejected. See the [Subagent](/subskills/recursive-subagent) page for the full output rejection checklist.
+</Warning>
+
+## Bundle Location
+
+Canonical bundles are stored under:
+
+```
+/.recursive/run/<run-id>/evidence/review-bundles/
+```
+
+Reference this path in the phase artifact and in the handoff to the subagent so the review is durable and repeatable across sessions.

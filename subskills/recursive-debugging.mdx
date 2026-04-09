@@ -1,0 +1,207 @@
+---
+title: "Debugging"
+description: "Insert Phase 1.5 to find root cause before planning any fix."
+---
+
+## Overview
+
+The `recursive-debugging` subskill inserts a mandatory Phase 1.5 between Phase 1 (AS-IS) and Phase 2 (TO-BE Plan) whenever a requirement involves fixing a bug, investigating a test failure, or understanding unexpected behavior. It enforces systematic root cause analysis before any fix is attempted.
+
+```bash
+npx skills add try-works/recursive-mode --skill recursive-debugging --full-depth
+```
+
+**Core principle:** Always find the root cause before attempting fixes. Symptom fixes are failure.
+
+## The Iron Law
+
+<Warning>
+**NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.**
+
+Skipping Phase 1.5 to attempt a quick fix is not faster — it creates rework, new bugs, and thrashing. Systematic debugging is faster than guess-and-check, even under time pressure.
+</Warning>
+
+## When to Use
+
+Insert Phase 1.5 whenever:
+
+- A requirement is a bug fix
+- Tests are failing and you need to understand why
+- Behavior is unexpected or intermittent
+- A performance problem needs investigation
+- Integration issues are reported
+
+Use it **especially** when you feel pressure to skip it: emergencies, "obvious" fixes, and repeated failed fix attempts are all signs that the process matters more, not less.
+
+## How Phase 1.5 Fits
+
+Phase 1.5 sits between AS-IS analysis and planning:
+
+```
+Phase 1:   01-as-is.md          (captures current behavior)
+               ↓
+Phase 1.5: 01.5-root-cause.md   (this subskill)
+               ↓
+Phase 2:   02-to-be-plan.md     (fix plan based on confirmed root cause)
+```
+
+Lock Phase 1 first. Then create `01.5-root-cause.md` with `Status: DRAFT` and work through the four steps below. Lock Phase 1.5 when root cause is confirmed. Phase 2 then consumes the findings from Phase 1.5.
+
+## The Four Steps
+
+<Steps>
+  <Step title="Error Analysis">
+    Read error messages and stack traces completely before doing anything else. They often contain the exact location of the problem.
+
+    Record in the artifact:
+
+    ```markdown
+    ## Error Analysis
+
+    **Error Message:** [verbatim]
+    **Stack Trace:** [key frames]
+    **File:Line:** [locations]
+    **Error Code:** [if applicable]
+    **Key Insight:** [what the error is telling you]
+    ```
+
+    Then verify you can reproduce the issue reliably. If you cannot reproduce it, gather more data — do not guess.
+
+    ```markdown
+    ## Reproduction Verification
+
+    **Steps:**
+    1. [exact step]
+    2. [exact step]
+
+    **Reproducible:** Yes / No / Intermittent
+    **Frequency:** [X out of Y attempts]
+    **Deterministic:** Yes / No
+    ```
+  </Step>
+  <Step title="Pattern Analysis">
+    Find the difference between working and broken code before proposing any fix.
+
+    - Locate similar working code in the same codebase
+    - Compare the working and broken paths line by line
+    - Check recent commits, dependency changes, and config changes for what could have introduced the problem
+    - Trace data flow backward through the call stack to find where the bad value originates
+
+    Record in the artifact:
+
+    ```markdown
+    ## Pattern Analysis
+
+    **Working Example:** [file:location]
+    **Broken Code:** [file:location]
+
+    **Key Differences:**
+    | Aspect | Working | Broken |
+    |--------|---------|--------|
+    | [X]    | [value] | [value] |
+
+    **Likely Cause:** [difference that explains the bug]
+    **Dependencies:** [what the code needs to work]
+    ```
+  </Step>
+  <Step title="Hypothesis Testing">
+    Form one clear hypothesis. Make the smallest possible change to test it. One variable at a time.
+
+    ```markdown
+    ## Hypothesis Testing
+
+    ### Hypothesis 1
+    **Statement:** I think X is the root cause because Y
+    **Rationale:** [why you think this]
+    **Test:** [minimal change to verify]
+    **Result:** confirmed / rejected
+    **Evidence:** [output or observation]
+    ```
+
+    If the hypothesis is rejected, form a new one. Do not stack multiple fixes on top of each other to see if something works.
+
+    <Tip>
+    If you genuinely don't understand something, say so. Do not pretend to know the root cause. Research more or ask for help.
+    </Tip>
+  </Step>
+  <Step title="Fix Summary">
+    Once root cause is confirmed, write a summary that Phase 2 can build directly from.
+
+    ```markdown
+    ## Root Cause Summary
+
+    **Root Cause:** [one sentence]
+    **Location:** [file:line]
+    **Explanation:** [paragraph explaining why]
+    **Fix Approach:** [high-level]
+    **Test Strategy:** [how to verify the fix]
+    ```
+
+    This summary becomes the input to Phase 2's fix plan and test strategy. Do not begin fixing until Phase 1.5 is locked.
+  </Step>
+</Steps>
+
+## Output Artifact
+
+Write the artifact to:
+
+```
+/.recursive/run/<run-id>/01.5-root-cause.md
+```
+
+The artifact must close with a Coverage Gate and Approval Gate before it can be locked:
+
+```markdown
+## Coverage Gate
+
+- [ ] Error messages analyzed
+- [ ] Reproduction verified
+- [ ] Recent changes reviewed
+- [ ] Data flow traced to source
+- [ ] Pattern analysis completed
+- [ ] Hypothesis tested and confirmed
+- [ ] Root cause documented
+- [ ] Fix strategy defined
+
+Coverage: PASS / FAIL
+
+## Approval Gate
+
+- [ ] Root cause identified (not just symptom)
+- [ ] Fix approach clear
+- [ ] Test strategy defined
+- [ ] No "quick fixes" attempted
+- [ ] Ready to proceed to Phase 2
+
+Approval: PASS / FAIL
+```
+
+## Red Flags
+
+Stop and return to the systematic process if you catch yourself thinking any of the following:
+
+<AccordionGroup>
+  <Accordion title="Thoughts that mean you're about to skip process">
+    - "Quick fix for now, investigate later"
+    - "Just try changing X and see if it works"
+    - "Add multiple changes, run tests"
+    - "It's probably X, let me fix that"
+    - "I don't fully understand but this might work"
+    - You are proposing solutions before tracing data flow
+    - You are on your third failed fix attempt
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+If you have made three or more failed fix attempts, stop fixing. The pattern indicates an architectural problem. Document the attempts in Phase 1.5, question whether the approach is sound, and decide whether a deeper refactor is needed before continuing.
+</Note>
+
+## Common Shortcuts to Reject
+
+| Excuse | Why It's Wrong |
+|--------|----------------|
+| "Issue is simple, don't need process" | Simple issues have root causes too. The process is fast for simple bugs. |
+| "Emergency, no time for process" | Systematic debugging is faster than guess-and-check thrashing. |
+| "I see the problem, let me fix it" | Seeing symptoms is not the same as understanding root cause. |
+| "Multiple fixes at once saves time" | You can't isolate what worked. Multiple simultaneous changes cause new bugs. |
+| "One more fix attempt" (after 2+ failures) | Three or more failures indicate an architectural problem. Question the pattern. |

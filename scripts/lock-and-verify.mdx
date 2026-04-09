@@ -1,0 +1,98 @@
+---
+title: "Lock & Verify"
+description: "Reference for recursive-lock and verify-locks — tools for locking phase artifacts and verifying lock integrity."
+sidebarTitle: "Lock & Verify"
+---
+
+Use `recursive-lock` to lock a phase artifact once it has passed audit. Use `verify-locks` to confirm that all locked artifacts in a run still match their stored hashes.
+
+---
+
+## recursive-lock
+
+`recursive-lock` finalizes a phase artifact by writing three fields into it:
+
+- `Status: LOCKED` — marks the artifact as immutable
+- `LockedAt` — records the UTC timestamp of the lock
+- `LockHash` — a SHA-256 hash of the artifact content (excluding the `LockHash` line itself)
+
+The script validates the artifact's gates and audit discipline before writing the lock fields, so it will refuse to lock an artifact that has unresolved lint failures.
+
+### Why use the script
+
+The `LockHash` must be computed from normalized content (CRLF-normalized, `LockHash` line stripped) using a specific algorithm. If you write the lock fields by hand, the hash will almost certainly be wrong, and `verify-locks` will report the artifact as tampered.
+
+<Warning>
+  Do not manually edit `Status`, `LockedAt`, or `LockHash` in a phase artifact. Always use `recursive-lock` to write these fields. Manual edits will invalidate the hash and cause `verify-locks` to fail.
+</Warning>
+
+### Usage
+
+<CodeGroup>
+
+```bash Python
+python scripts/recursive-lock.py --repo-root . --run-id <run-id> --phase 03-implementation-summary.md
+```
+
+```powershell PowerShell
+pwsh -NoProfile -File scripts/recursive-lock.ps1 -RepoRoot . -RunId <run-id> -Phase 03-implementation-summary.md
+```
+
+</CodeGroup>
+
+Replace `<run-id>` with your run directory name and `--phase` / `-Phase` with the filename of the artifact you want to lock (for example, `01-as-is.md`, `02-to-be-plan.md`).
+
+### Pre-lock validation
+
+Before writing lock fields, the script runs the same checks as `lint-recursive-run`. If any lint failures are found, the lock is aborted and the failures are printed. Fix the artifact, then run `recursive-lock` again.
+
+<Tip>
+  Run `lint-recursive-run` first to see all issues at once, then fix them before calling `recursive-lock`. The lock script stops at the first blocking failure, so lint gives you a more complete picture.
+</Tip>
+
+---
+
+## verify-locks
+
+`verify-locks` iterates over all artifacts in a run that carry a `LockHash` field and recomputes the hash from the current file content. Any artifact whose recomputed hash does not match the stored hash is reported as potentially tampered or corrupted.
+
+### What it checks
+
+- Every artifact with `Status: LOCKED` has a `LockHash` field
+- The recomputed SHA-256 hash of each locked artifact matches its stored `LockHash`
+- `LockedAt` is present and parseable
+
+### Usage
+
+<CodeGroup>
+
+```bash Python
+python scripts/verify-locks.py --repo-root . --run-id <run-id>
+```
+
+```powershell PowerShell
+pwsh -NoProfile -File scripts/verify-locks.ps1 -RepoRoot . -RunId <run-id>
+```
+
+</CodeGroup>
+
+### When to run
+
+Run `verify-locks` in the following situations:
+
+- **Before merging** — confirm that no locked artifact was edited after locking
+- **After any artifact edit** — if you needed to correct a locked artifact using an addendum, verify that the lock fields are still intact on the original artifact
+- **As a CI hygiene check** — add `verify-locks` to your CI pipeline to catch accidental edits to locked history
+
+<Note>
+  Recursive Mode does not rewrite locked history. If you need to correct a locked phase, add an addendum artifact and reconcile it in the downstream phase — do not edit the locked file directly.
+</Note>
+
+<AccordionGroup>
+  <Accordion title="verify-locks reports a hash mismatch on a file I didn't touch">
+    Hash mismatches can result from line-ending normalization by your editor, Git, or OS tools. The lock hash is computed from LF-normalized content, so any tool that converts line endings can silently invalidate a hash. Check your Git `core.autocrlf` and editor settings.
+  </Accordion>
+  <Accordion title="I need to correct a mistake in a locked artifact">
+    Do not edit the locked file. Instead, create an addendum artifact in the run directory and explicitly reconcile the correction in the next downstream phase. Record the addendum in the `Inputs` section of any phase that depends on the corrected information.
+  </Accordion>
+</AccordionGroup>

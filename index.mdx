@@ -1,0 +1,55 @@
+---
+title: "Recursive Mode"
+description: "A structured, file-backed workflow for AI-assisted software development. Give your agent audited phases, durable artifacts, and persistent memory — instead of losing everything in chat history."
+---
+
+Recursive Mode is an installable skill package that transforms how AI agents handle complex engineering tasks. Instead of relying on conversational context that disappears between sessions, Recursive Mode keeps requirements, plans, implementation evidence, and decisions in repository files — making agent work auditable, resumable, and consistent across contributors.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Install and bootstrap a repository in minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    All install options: skills CLI, Python, PowerShell, Bash
+  </Card>
+  <Card title="Workflow Overview" icon="diagram-project" href="/concepts/workflow-overview">
+    Understand the phase-by-phase run model
+  </Card>
+  <Card title="Subskills" icon="puzzle-piece" href="/subskills/recursive-worktree">
+    Specialized skills for TDD, debugging, review, and more
+  </Card>
+</CardGroup>
+
+## How it works
+
+<Steps>
+  <Step title="Install the skill package">
+    Add Recursive Mode to your agent environment with the skills CLI or a bootstrap script.
+  </Step>
+  <Step title="Bootstrap your repository">
+    Run the installer to create the `/.recursive/` scaffold, control-plane docs, and memory layout.
+  </Step>
+  <Step title="Start a run">
+    Give your agent a short command like `Implement the run` — requirements live in repo files, not in prompts.
+  </Step>
+  <Step title="Progress through audited phases">
+    Each phase produces a locked artifact. The agent cannot skip phases or rewrite history — only add addenda.
+  </Step>
+</Steps>
+
+## What's included
+
+<CardGroup cols={2}>
+  <Card title="Phases & Artifacts" icon="file-lines" href="/concepts/phases">
+    Requirements, AS-IS analysis, planning, implementation, testing, QA, and closeout — all backed by locked files
+  </Card>
+  <Card title="Memory" icon="brain" href="/concepts/memory">
+    Durable project knowledge persists across runs so agents start with better context every time
+  </Card>
+  <Card title="Scripts" icon="terminal" href="/scripts/overview">
+    Cross-platform tools for status, linting, locking, review bundles, and hygiene checks
+  </Card>
+  <Card title="Guides" icon="book-open" href="/guides/starting-a-run">
+    Step-by-step walkthroughs for common workflows and scenarios
+  </Card>
+</CardGroup>

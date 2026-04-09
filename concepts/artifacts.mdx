@@ -1,0 +1,178 @@
+---
+title: "Artifacts"
+description: "What artifact files are, how the draft-to-lock lifecycle works, and how to read them."
+---
+
+An **artifact** is a Markdown file that records the inputs, outputs, reasoning, and evidence for a single phase of a single run. Every phase produces exactly one artifact. Artifacts are locked when complete and never edited afterward — corrections flow forward through addenda.
+
+The artifact for run `75`, Phase 1 lives at:
+
+```text
+/.recursive/run/75/01-as-is.md
+```
+
+All artifacts for a run live together under `/.recursive/run/<run-id>/`.
+
+---
+
+## Required header
+
+Every artifact begins with a standard header block that records the run, phase, status, inputs, outputs, and scope:
+
+<CodeGroup>
+
+```markdown artifact header
+Run: `/.recursive/run/<run-id>/`
+Phase: `01 AS-IS analysis`
+Status: `DRAFT`
+Inputs:
+- `/.recursive/run/<run-id>/00-requirements.md`
+- `/.recursive/run/<run-id>/00-worktree.md`
+Outputs:
+- `/.recursive/run/<run-id>/01-as-is.md`
+Scope note: This artifact analyzes the current codebase state as it relates to the
+in-scope requirements. It is the input to Phase 2 planning.
+```
+
+```markdown locked artifact header
+Run: `/.recursive/run/<run-id>/`
+Phase: `01 AS-IS analysis`
+Status: `LOCKED`
+Inputs:
+- `/.recursive/run/<run-id>/00-requirements.md`
+- `/.recursive/run/<run-id>/00-worktree.md`
+Outputs:
+- `/.recursive/run/<run-id>/01-as-is.md`
+Scope note: This artifact analyzes the current codebase state as it relates to the
+in-scope requirements. It is the input to Phase 2 planning.
+LockedAt: `2025-11-14T09:22:31Z`
+LockHash: `a3f8c2d14e67b09f5c1843a2e9d07f6b3281cc4d90e5f1a87b2344c6d8e0f912`
+```
+
+</CodeGroup>
+
+The `Inputs` list must include every file the phase read to produce its output — base input files and any applicable addenda, in lexical order.
+
+---
+
+## Draft-to-lock lifecycle
+
+Audited phases follow a mandatory loop before they can lock:
+
+<Steps>
+  <Step title="Draft">
+    Write the phase artifact from the effective inputs. Record `Status: DRAFT` in the header.
+  </Step>
+  <Step title="Audit">
+    Re-read the upstream artifacts, reconcile against the diff basis in `00-worktree.md`, and run the phase audit. Record the audit result in `## Audit Verdict`.
+  </Step>
+  <Step title="Repair">
+    If the audit finds gaps or drift, fix the work. Stay in the current phase — do not advance.
+  </Step>
+  <Step title="Re-audit">
+    Run the audit again with the repaired artifact as input.
+  </Step>
+  <Step title="Pass">
+    Only after `Audit: PASS` may you set `Coverage: PASS` and `Approval: PASS` in the gates.
+  </Step>
+  <Step title="Lock">
+    Run `recursive-lock` to write `Status: LOCKED`, `LockedAt`, and `LockHash` into the artifact header. The artifact is now immutable.
+  </Step>
+</Steps>
+
+<Warning>
+  Do not set `Coverage: PASS` or `Approval: PASS` unless `Audit: PASS` has already been recorded. Do not advance to the next phase while any required gate reads `FAIL`.
+</Warning>
+
+Non-audited phases (Phase 0 worktree, Phase 0 requirements, Phase 5) follow the same draft-and-lock pattern but without the mandatory audit loop.
+
+---
+
+## Coverage Gate and Approval Gate
+
+Every artifact (except `00-requirements.md`) must end with both gates before locking.
+
+**Coverage Gate** — proves the output addresses everything relevant in the input, including addenda:
+
+```markdown
+## Coverage Gate
+
+- Effective inputs reviewed:
+  - `/.recursive/run/<run-id>/00-requirements.md`
+  - `/.recursive/run/<run-id>/addenda/01-as-is-addendum-001.md`
+- Requirement coverage check:
+  - `R1`: Covered at ## Current authentication flow
+  - `R2`: Covered at ## Token storage analysis
+  - `R3`: Deferred — out of scope for this run
+- Out-of-scope confirmation:
+  - `OOS1`: unchanged
+
+Coverage: PASS
+```
+
+**Approval Gate** — proves the artifact is ready for the next phase:
+
+```markdown
+## Approval Gate
+
+- Objective readiness checks:
+  - Artifact is internally consistent
+  - All in-scope requirements have explicit dispositions
+  - No required section is missing
+- Remaining blockers:
+  - none
+
+Approval: PASS
+```
+
+If either gate cannot pass, set it to `FAIL` and list the exact fixes required before proceeding.
+
+---
+
+## Addenda
+
+An **addendum** is a correction or extension attached to the *current* phase when a later phase discovers a gap in an earlier locked phase. You never edit the locked artifact — you create an addendum file under `/.recursive/run/<run-id>/addenda/` that carries the correction forward.
+
+Addenda are treated as authoritative effective inputs. Any artifact that relies on an addendum must list it in its `Inputs` field and reconcile it explicitly in the artifact body.
+
+Two types of addenda exist:
+
+- **Stage-local addendum** — corrects or extends the current phase's own understanding without touching locked history.
+- **Upstream-gap addendum** — compensates for a gap in a prior locked phase, applied at the current phase instead of rewriting the past.
+
+<Tip>
+  When you need to correct something a prior phase got wrong, don't try to unlock and edit it. Create an upstream-gap addendum in the current phase and reconcile the correction there.
+</Tip>
+
+---
+
+## Lock fields
+
+When an artifact locks, three fields are appended to the header:
+
+<CodeGroup>
+
+```markdown lock block
+Status: `LOCKED`
+LockedAt: `2025-11-14T09:22:31Z`
+LockHash: `a3f8c2d14e67b09f5c1843a2e9d07f6b3281cc4d90e5f1a87b2344c6d8e0f912`
+```
+
+```bash locking command
+# Use recursive-lock to write the lock fields correctly
+python scripts/recursive-lock.py --run-id 75 --phase 01
+pwsh -NoProfile -File scripts/recursive-lock.ps1 -RunId 75 -Phase 01
+```
+
+</CodeGroup>
+
+`LockHash` is a SHA-256 of the artifact content at the moment of locking. Use `verify-locks` to confirm that no artifact has been modified after locking:
+
+```bash
+python scripts/verify-locks.py --run-id 75
+pwsh -NoProfile -File scripts/verify-locks.ps1 -RunId 75
+```
+
+<Note>
+  Always use `recursive-lock` to write lock fields. Do not hand-write `Status: LOCKED` or compute `LockHash` manually — the script ensures consistency with what `verify-locks` expects.
+</Note>

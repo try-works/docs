@@ -1,0 +1,87 @@
+---
+title: "Auditing Phases"
+description: "How the audit loop works and what you need to know about phase gates, addenda, and requirement tracking."
+---
+
+Recursive Mode enforces an audit loop on every major phase. A phase cannot lock — and the next phase cannot start — until the audit passes. This prevents vague "done" claims from advancing through the workflow.
+
+## The audit lifecycle
+
+Every audited phase follows this sequence:
+
+```text
+draft → audit → repair → re-audit → pass → lock
+```
+
+The agent cannot set `Coverage: PASS` or `Approval: PASS` for an audited phase unless the artifact ends with `Audit: PASS`. The agent cannot lock the artifact unless both gates pass. There are no shortcuts.
+
+## Which phases require auditing
+
+| Phase | Artifact |
+|---|---|
+| Phase 1 — AS-IS | `01-as-is.md` |
+| Phase 1.5 — Root Cause (debug mode) | `01.5-root-cause.md` |
+| Phase 2 — TO-BE plan | `02-to-be-plan.md` |
+| Phase 3 — Implementation summary | `03-implementation-summary.md` |
+| Phase 3.5 — Code review | `03.5-code-review.md` |
+| Phase 4 — Test summary | `04-test-summary.md` |
+| Phase 6 — Decisions update | `06-decisions-update.md` |
+| Phase 7 — State update | `07-state-update.md` |
+| Phase 8 — Memory impact | `08-memory-impact.md` |
+
+## Coverage Gate and Approval Gate
+
+Every audited phase ends with two mandatory gates:
+
+**Coverage Gate** — proves the artifact addresses everything relevant in its inputs, including any applicable addenda. The agent must demonstrate that nothing was silently skipped.
+
+**Approval Gate** — proves the artifact is actually ready to proceed to the next phase. For Phase 5 (manual QA), human or hybrid modes require explicit user sign-off before this gate can pass.
+
+Both gates must pass before the artifact can lock. A phase that locks without both gates is a workflow violation.
+
+## Addenda
+
+Locked artifacts must not be edited. If a later phase discovers a gap, an error, or missing information in an earlier locked phase, you use an **addendum** instead.
+
+Addenda live at:
+
+```text
+/.recursive/run/<run-id>/addenda/
+```
+
+An addendum is an authoritative effective input. The agent must:
+
+1. List relevant addenda under `Inputs` in the current phase artifact
+2. Re-read them as part of `## Effective Inputs Re-read`
+3. Explicitly reconcile them in `## Earlier Phase Reconciliation`
+
+Addenda are automatically included when generating review bundles for delegated review. Do not omit them from any delegated context.
+
+## Requirement Completion Status
+
+Every audited phase must include a `## Requirement Completion Status` section that accounts for every in-scope requirement (`R#`). Each requirement needs an explicit disposition:
+
+| Disposition | Meaning | What's required |
+|---|---|---|
+| `implemented` | Code was written to satisfy this requirement | Must cite `Changed Files` |
+| `verified` | This requirement was validated, not just implemented | Must cite `Changed Files` **and** distinct verification evidence |
+| `deferred` | Intentionally postponed | Must cite `Deferred By` and rationale |
+| `out-of-scope` | Not part of this run | Must cite `Scope Decision` |
+
+You cannot mark a requirement as `implemented` or `verified` without concrete `Changed Files`. You cannot mark `verified` without separate verification evidence — citing the same code that implements the requirement is not sufficient.
+
+## Locking an artifact
+
+After `Audit: PASS`, `Coverage: PASS`, and `Approval: PASS`, lock the artifact using the `recursive-lock` script:
+
+```bash
+python scripts/recursive-lock.py --repo-root . --run-id <run-id> --phase 02
+```
+
+The script writes `Status: LOCKED`, `LockedAt`, and `LockHash` to the artifact. Do not manually edit those fields — a manual edit will produce a LockHash mismatch that the verify script will catch.
+
+To verify all locks in a run:
+
+```bash
+python scripts/verify-locks.py --repo-root . --run-id <run-id>
+```

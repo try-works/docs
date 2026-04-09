@@ -1,0 +1,127 @@
+---
+title: "Delegated Review"
+description: "How to set up and use delegated code review and phase audits with subagents."
+---
+
+Recursive Mode supports delegating audits and code reviews to subagents. When configured correctly, a subagent receives a complete context bundle, returns grounded findings and a verdict, and the main agent verifies that result before accepting it.
+
+Delegated review is optional. If subagents are unavailable, the main agent performs the same audit as a self-audit. Audit rigor is not optional — only delegation is.
+
+## When to use delegated review
+
+- Phase 3.5 code review — the primary use case
+- Any audited phase where an independent pass would improve quality
+- High-risk or large-scale implementations where a second opinion on requirement coverage matters
+
+## How it works
+
+<Steps>
+  <Step title="Generate a review bundle">
+    Use the `recursive-review-bundle` script to package everything the reviewer needs into a canonical, reproducible bundle:
+
+    <CodeGroup>
+
+    ```bash Python
+    python scripts/recursive-review-bundle.py \
+      --repo-root . \
+      --run-id "<run-id>" \
+      --phase "03.5 Code Review" \
+      --role code-reviewer \
+      --artifact-path "/.recursive/run/<run-id>/03.5-code-review.md" \
+      --upstream-artifact "/.recursive/run/<run-id>/00-requirements.md" \
+      --upstream-artifact "/.recursive/run/<run-id>/02-to-be-plan.md" \
+      --audit-question "Which R# remain incomplete?" \
+      --required-output "Findings ordered by severity"
+    ```
+
+    ```powershell PowerShell
+    pwsh -NoProfile -File scripts/recursive-review-bundle.ps1 `
+      -RepoRoot . `
+      -RunId "<run-id>" `
+      -Phase "03.5 Code Review" `
+      -Role code-reviewer `
+      -ArtifactPath "/.recursive/run/<run-id>/03.5-code-review.md" `
+      -UpstreamArtifact "/.recursive/run/<run-id>/00-requirements.md","/.recursive/run/<run-id>/02-to-be-plan.md" `
+      -AuditQuestion "Which R# remain incomplete?" `
+      -RequiredOutput "Findings ordered by severity"
+    ```
+
+    </CodeGroup>
+
+    The bundle is saved under `/.recursive/run/<run-id>/evidence/review-bundles/`. The bundle auto-discovers relevant addenda — do not omit them from the delegated context.
+  </Step>
+
+  <Step title="Pass the bundle to a subagent">
+    Dispatch the subagent with the bundle path and the phase-specific instructions. Valid subagent roles include:
+
+    - `phase-auditor` — independent pass over draft, upstream artifacts, diff, and requirement coverage
+    - `code-reviewer` — Phase 3.5; checks requirements vs implementation, plan vs implementation, and code quality
+    - `traceability-auditor` — verifies every in-scope `R#` is explicitly addressed
+    - `test-reviewer` — verifies test adequacy, exact commands, and evidence capture
+    - `memory-auditor` — Phase 8; verifies memory status transitions and router updates
+
+    Vague delegation ("review this phase") is not valid. The subagent must receive a complete context bundle.
+  </Step>
+
+  <Step title="Subagent returns findings and a verdict">
+    The subagent must return structured findings and one of:
+
+    - `Audit: PASS` — the phase is ready to lock
+    - `Audit: FAIL` — repairs are needed before the phase can proceed
+
+    A result that contains only generic praise with no grounded findings, or that lacks an explicit verdict, must be rejected.
+  </Step>
+
+  <Step title="Main agent verifies claims against actual files">
+    Before accepting a delegated result, the main agent must verify the subagent's claims against:
+
+    - the actual worktree diff
+    - the actual changed files
+    - the actual phase artifacts and review bundle
+
+    If the verification reveals issues, record the concrete repair performed. Do not silently accept stale delegated context.
+  </Step>
+
+  <Step title="Record a subagent action record">
+    Every meaningful subagent contribution must produce a durable action record under:
+
+    ```text
+    /.recursive/run/<run-id>/subagents/
+    ```
+
+    The action record captures inputs provided, claimed actions, claimed file and artifact impact, findings, and the acceptance decision. The Phase 3.5 artifact must also record `Review Bundle Path` in `## Review Metadata`.
+  </Step>
+</Steps>
+
+<Warning>
+Never accept a delegated result without verifying the subagent's claims against actual files, the actual diff, and the actual recursive artifacts. A subagent's word is not sufficient — the main agent is always responsible for verification before lock.
+</Warning>
+
+## Self-audit fallback
+
+When subagents are unavailable, perform the same audit locally and record it in the phase artifact:
+
+```text
+Audit Execution Mode: self-audit
+Subagent Availability: unavailable
+```
+
+Then complete the full audit loop — draft, re-read upstream artifacts, reconcile against the diff basis, record gaps, repair, re-audit, and set `Audit: PASS` only when the phase is genuinely ready. Self-audit must meet the same standard as delegated audit.
+
+## What makes a valid review bundle
+
+A bundle is only valid when it includes all of the following:
+
+- Phase name and artifact path
+- Artifact content hash
+- Reviewer role
+- Upstream artifacts to re-read
+- Relevant addenda
+- Relevant prior recursive evidence
+- Normalized diff basis from `00-worktree.md`
+- Changed file list
+- Targeted code references
+- Phase-specific audit questions
+- Required output shape (findings format and verdict)
+
+If any item is missing, do not delegate — run the audit yourself.

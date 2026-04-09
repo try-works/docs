@@ -1,0 +1,123 @@
+---
+title: "Troubleshooting"
+description: "Common issues when running Recursive Mode and how to resolve them."
+---
+
+<AccordionGroup>
+  <Accordion title="My agent keeps losing context between sessions">
+    The agent must read the three core control-plane docs at the start of every new session:
+
+    - `/.recursive/STATE.md` — current state of the repo and codebase
+    - `/.recursive/DECISIONS.md` — prior work and the reasoning behind it
+    - `/.recursive/memory/MEMORY.md` — memory router, taxonomy, and freshness policy
+
+    If the repo is not bootstrapped, or those files are missing or stale, run the bootstrap installer:
+
+    ```bash
+    python scripts/install-recursive-mode.py --repo-root .
+    ```
+
+    Ensure your agent environment loads `SKILL.md` (the installable skill entrypoint) so it knows to read those files at session start.
+  </Accordion>
+
+  <Accordion title="The agent is modifying earlier locked artifacts">
+    Locked artifacts must not be edited. Once a phase locks, its artifact is immutable.
+
+    If a later phase discovers a gap, an error, or missing information in an earlier locked phase, use an **addendum** instead:
+
+    ```text
+    /.recursive/run/<run-id>/addenda/
+    ```
+
+    Addenda are authoritative effective inputs. The current phase must list them under `Inputs`, re-read them, and reconcile them explicitly. They do not rewrite locked history — they extend it.
+  </Accordion>
+
+  <Accordion title="Phase won't lock — Audit: PASS is missing">
+    The audit loop must complete in full before a phase can lock. The required sequence is:
+
+    ```text
+    draft → audit → repair → re-audit → pass → lock
+    ```
+
+    `Coverage: PASS` and `Approval: PASS` cannot be set until `Audit: PASS` appears at the end of the artifact. Check the artifact for any outstanding gaps, drift from the diff basis, or incomplete `Requirement Completion Status` entries, and complete another audit cycle.
+  </Accordion>
+
+  <Accordion title="LockHash mismatch after locking">
+    Do not manually edit `Status`, `LockedAt`, or `LockHash` fields. Those fields must be written by the `recursive-lock` script, which computes the correct SHA-256 hash of the artifact content:
+
+    ```bash
+    python scripts/recursive-lock.py --repo-root . --run-id <run-id> --phase 02
+    ```
+
+    If the fields were edited by hand, re-lock using the script. Verify all locks in the run with:
+
+    ```bash
+    python scripts/verify-locks.py --repo-root . --run-id <run-id>
+    ```
+  </Accordion>
+
+  <Accordion title="The agent implemented code before writing a failing test">
+    This is a TDD violation. If you are using `recursive-tdd` in strict mode, the RED phase (a failing test) must be completed and recorded before any implementation code is written.
+
+    To fix it:
+
+    1. Delete the implementation code
+    2. Write a failing test that targets the intended behavior
+    3. Record the RED evidence in the phase artifact
+    4. Re-implement to make the test pass (GREEN phase)
+
+    If strict TDD is not appropriate for the situation, declare `TDD Mode: pragmatic` in the Phase 3 artifact and record an explicit exception rationale along with compensating evidence.
+  </Accordion>
+
+  <Accordion title="I need to correct something in a phase that's already locked">
+    Create an addendum file in the run's addenda directory:
+
+    ```text
+    /.recursive/run/<run-id>/addenda/
+    ```
+
+    Name it descriptively and write the correction or clarification there. The current phase and all downstream phases treat addenda as authoritative effective inputs. List the addendum under `Inputs` in the current phase artifact, re-read it, and reconcile it explicitly.
+
+    Do not edit the locked artifact — a LockHash mismatch will be detected by `verify-locks`.
+  </Accordion>
+
+  <Accordion title="Scaffold is missing — /.recursive/ doesn't exist">
+    The repo has not been bootstrapped yet. Run the installer for your toolchain:
+
+    ```bash
+    python scripts/install-recursive-mode.py --repo-root .
+    ```
+
+    ```bash
+    bash scripts/install-recursive-mode.sh --repo-root .
+    ```
+
+    ```powershell
+    pwsh -NoProfile -File scripts/install-recursive-mode.ps1 -RepoRoot .
+    ```
+
+    This creates the `/.recursive/` scaffold, bridge docs, memory routers, and the run layout the workflow depends on.
+  </Accordion>
+
+  <Accordion title="Agent doesn't know what run to resume">
+    Be explicit. If you know the run ID:
+
+    ```text
+    Implement run <run-id>
+    ```
+
+    If you want to check which runs are active before resuming:
+
+    ```bash
+    python scripts/recursive-status.py --repo-root .
+    ```
+
+    If you want to resume from a specific plan artifact:
+
+    ```text
+    Implement the plan at /.recursive/run/<run-id>/02-to-be-plan.md
+    ```
+
+    The agent will ask for clarification if the command is ambiguous and no single active run can be identified.
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,72 @@
+---
+title: "Introduction"
+description: "What Recursive Mode is, who it's for, and the problems it solves."
+---
+
+Recursive Mode is an installable skill package for structured AI-assisted software development. It gives your agent a file-backed workflow for requirements, planning, implementation, testing, review, closeout, and memory — instead of leaving that entire process scattered across chat history.
+
+## The problem: context rot
+
+Long-running agent work has a common failure mode: requirements, decisions, and plans live in the conversation. Once that session ends or the context window overflows, the agent loses track of what was decided, what was implemented, and why. This is **context rot**.
+
+Recursive Mode solves it by making static repository documents the source of truth for every phase. Requirements, plans, and evidence live in files that persist across sessions, contributors, and repositories. Prompts become short commands, not specifications.
+
+## Who it's for
+
+- **Developers who want auditable agent runs** — every phase is recorded in repo files, not in ephemeral chat
+- **Teams who need recorded evidence** — requirements and implementation outcomes are captured as durable artifacts
+- **Users running long or resumable work** — runs can be paused and resumed without losing context
+
+## Key benefits
+
+<CardGroup cols={2}>
+  <Card title="Context in the repo" icon="folder-open">
+    Keep important implementation context in repository files instead of losing it in chat history.
+  </Card>
+  <Card title="Auditable and resumable" icon="magnifying-glass">
+    Make agent work easier to audit, review, and resume — even across sessions and contributors.
+  </Card>
+  <Card title="Explicit evidence" icon="check-circle">
+    Reduce vague "done" claims by requiring explicit evidence and phase completion records.
+  </Card>
+  <Card title="Structured reliability" icon="shield-check">
+    Improve reliability through structured planning, testing, review, and closeout phases.
+  </Card>
+  <Card title="Safer delegated work" icon="users">
+    Make delegated or subagent work safer by requiring the controller to verify results against real files and diffs.
+  </Card>
+  <Card title="Durable lessons" icon="book-open">
+    Preserve project decisions and operational lessons in a reusable memory layer that future runs can build on.
+  </Card>
+</CardGroup>
+
+## What's included
+
+Recursive Mode ships these installable skills:
+
+| Skill | Purpose |
+|---|---|
+| `recursive-mode` | Core workflow orchestration: staged phases, locked artifacts, durable memory |
+| `recursive-worktree` | Isolates implementation work in a dedicated git worktree |
+| `recursive-debugging` | Structured debugging with explicit root-cause analysis (Phase 1.5) |
+| `recursive-tdd` | Strict or pragmatic TDD with recorded RED/GREEN evidence |
+| `recursive-review-bundle` | Packages delegated code reviews into canonical, reproducible bundles |
+| `recursive-subagent` | Controls subagent handoff contracts and self-audit fallback |
+
+Install the full package:
+
+```bash
+npx skills add try-works/recursive-mode --skill '*' --full-depth
+```
+
+Or install a single subskill:
+
+```bash
+npx skills add try-works/recursive-mode --skill recursive-tdd --full-depth
+```
+
+## How recursion works in practice
+
+<Tip>
+Recursive Mode is "recursive" not because of a programming trick, but because the process continuously revisits its own outputs. Each phase consumes artifacts from earlier phases. Audited phases loop through `draft → audit → repair → re-audit` until the work is genuinely ready. Closeout phases feed validated lessons back into decisions, state, and memory so future runs start from better context. Later work always refers back to earlier work.
+</Tip>

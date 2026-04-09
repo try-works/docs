@@ -1,0 +1,49 @@
+---
+title: "Scripts"
+description: "Reference overview of all scripts included with Recursive Mode — cross-platform utilities for bootstrapping, status checks, linting, locking, and more."
+sidebarTitle: "Overview"
+---
+
+Recursive Mode ships a set of cross-platform utility scripts for managing the control-plane lifecycle of your repository. Every script is available in two forms:
+
+- **Python** (`.py`) — works on any platform with Python 3 installed
+- **PowerShell** (`.ps1`) — works on Windows, macOS, and Linux with PowerShell 7+
+
+The install script also ships a **Bash** (`.sh`) variant for environments where Python is not available at bootstrap time.
+
+<Note>
+  When both Python and PowerShell are available, prefer the Python variant. The Python scripts are the reference implementation; PowerShell scripts mirror their behavior.
+</Note>
+
+## Script reference
+
+| Script | Purpose |
+|--------|---------|
+| `install-recursive-mode` (.py / .ps1 / .sh) | Bootstrap a repository with the `/.recursive/` control-plane scaffold, bridge docs, and memory layout |
+| `recursive-init` (.py / .ps1) | Initialize a new run directory under `/.recursive/run/<run-id>/` |
+| `recursive-status` (.py / .ps1) | Show run status, lock-chain validity, and audit blockers for a run |
+| `lint-recursive-run` (.py / .ps1) | Lint artifact structure, required header fields, gate completeness, and lock fields |
+| `recursive-lock` (.py / .ps1) | Lock a phase artifact by writing `Status: LOCKED`, `LockedAt`, and a SHA-256 `LockHash` |
+| `verify-locks` (.py / .ps1) | Verify that all locked artifacts in a run still match their stored `LockHash` |
+| `recursive-review-bundle` (.py / .ps1) | Generate a canonical review bundle for delegated audit or review |
+| `recursive-subagent-action` (.py / .ps1) | Generate a subagent action record scaffold under `/.recursive/run/<run-id>/subagents/` |
+| `recursive-closeout` (.py / .ps1) | Scaffold closeout artifacts for phases 4–8 |
+| `check-reusable-repo-hygiene` (.py / .ps1) | Check a reusable skill or workflow repository for committed run residue |
+
+## How to run
+
+Get help for any script by passing `--help` (Python) or `-Help` (PowerShell):
+
+<CodeGroup>
+
+```bash Python
+python scripts/recursive-status.py --help
+```
+
+```powershell PowerShell
+pwsh -NoProfile -File scripts/recursive-status.ps1 -Help
+```
+
+</CodeGroup>
+
+Replace `recursive-status` with the name of whichever script you want to inspect.

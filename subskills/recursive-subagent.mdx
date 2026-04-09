@@ -1,0 +1,163 @@
+---
+title: "Subagent"
+description: "Decide whether and how to delegate phases to subagents, and enforce the handoff contract when you do."
+---
+
+## Overview
+
+The `recursive-subagent` subskill defines when to delegate a recursive-mode phase to a subagent, how to structure the handoff, and when to reject a delegated result. It also defines the self-audit fallback for environments where subagents are not available.
+
+```bash
+npx skills add try-works/recursive-mode --skill recursive-subagent --full-depth
+```
+
+## When to Use
+
+Consider delegating to a subagent when a phase would benefit from an independent audit, a code review, or a bounded implementation with a clearly separate write scope. Subagents are optional accelerators — they are never required infrastructure.
+
+The main agent remains responsible at all times for:
+
+- one active recursive phase per run
+- full audit rigor before lock
+- verifying delegated work against real files, diffs, and artifacts
+- falling back to self-audit when subagents are unavailable
+
+## Priority of Use
+
+When subagents are available, use them in this order of value:
+
+| Priority | Role |
+|----------|------|
+| 1 | Phase auditor |
+| 2 | Traceability auditor |
+| 3 | Code reviewer |
+| 4 | Memory auditor |
+| 5 | Test reviewer |
+| 6 | Bounded implementer (only for truly disjoint write scopes) |
+
+Audit, review, and read-only verification are the safest default delegation modes.
+
+## Capability Detection
+
+Capability detection is a hard control point. At the start of any phase where you are considering delegation, determine whether your environment actually supports subagents.
+
+**If subagents are unavailable:**
+
+```markdown
+Subagent Availability: unavailable
+Audit Execution Mode: self-audit
+```
+
+Perform the same audit locally. Do not weaken or skip it.
+
+**If subagents are available:**
+
+```markdown
+Subagent Availability: available
+```
+
+Decide whether delegation materially helps for this specific phase. Keep the same audit checklist and acceptance standard either way.
+
+<Tip>
+Before delegating, read `/.recursive/memory/skills/SKILLS.md` and the relevant skill-memory shards for delegated review fit, review-bundle fit, and stale-context risks.
+</Tip>
+
+## The Delegated Audit Contract
+
+A delegated audit is only valid when you pass a complete context bundle. The controller must pass all 11 items:
+
+<AccordionGroup>
+  <Accordion title="Required bundle items">
+    1. Phase name and artifact path
+    2. Current phase draft
+    3. Exact upstream artifact paths that must be re-read
+    4. Relevant addendum paths
+    5. Relevant prior recursive evidence and memory refs
+    6. Diff basis from `00-worktree.md`
+    7. Changed file list
+    8. Targeted code file paths or file groups to inspect
+    9. Relevant control-plane docs when needed
+    10. Exact audit questions or checklist for the phase
+    11. Required output shape including findings and verdict
+  </Accordion>
+</AccordionGroup>
+
+Vague delegation such as "review this phase" or "audit implementation" is invalid. If any required item is missing, do not delegate — perform the audit yourself.
+
+Prefer generating the bundle with `recursive-review-bundle` and passing the bundle path as part of the handoff.
+
+## Output Rejection Rules
+
+Reject a delegated result if any of the following are true:
+
+- It does not cite the artifact path or phase name
+- It does not cite the review bundle path or clearly restate the same bundle contents
+- It does not mention the upstream artifacts re-read
+- It ignores relevant addenda that were part of the effective input set
+- It ignores relevant prior recursive evidence or memory refs in the bundle
+- It does not review the diff basis or changed files
+- It does not cite changed files or code refs in the review narrative
+- The controller did not verify claimed success against actual files, actual artifacts, and actual diff-owned scope
+- It cannot be translated into a durable subagent action record without guessing
+- It does not address requirement or plan alignment where required
+- It gives only generic praise with no grounded findings
+- It has no explicit verdict
+
+<Warning>
+Do not accept stale delegated context silently. If repairs were made after the subagent's review, record the concrete repair performed after verification.
+</Warning>
+
+## Canonical Roles
+
+### Phase Auditor
+
+Use for any audited phase that needs an independent pass over the current draft, upstream locked artifacts, the git diff versus the recorded baseline, and requirement coverage. The auditor identifies gaps, drift, and repair needs.
+
+### Traceability Auditor
+
+Use when you need to verify that downstream artifacts explicitly cover every in-scope `R#` and do not hide behind vague summaries. Traceability auditors check that `implemented` and `verified` dispositions cite concrete changed files and distinct verification evidence.
+
+### Code Reviewer
+
+Use for Phase 3.5 or high-risk Phase 3 and Phase 4 audits. The code reviewer checks:
+
+- Requirements versus implementation
+- Plan versus implementation
+- Git diff versus claimed scope
+- Code quality and maintainability
+- Test adequacy and TDD compliance
+
+### Memory Auditor
+
+Use in Phase 8 to verify that touched paths, memory status transitions, and router updates match the final validated repo state.
+
+### Test Reviewer
+
+Use in Phase 4 to audit test adequacy, exact test commands, evidence capture, and whether the implementation is truly complete before trusting test results.
+
+## Self-Audit Fallback
+
+When subagents are unavailable, reuse the same checklist in the phase artifact and record:
+
+```markdown
+## Audit Context
+
+Audit Execution Mode: self-audit
+Subagent Availability: unavailable
+Audit Inputs Provided:
+- `/.recursive/run/<run-id>/...`
+```
+
+Then complete the full audit loop locally:
+
+<Steps>
+  <Step title="Draft or revise the phase artifact" />
+  <Step title="Re-read upstream artifacts" />
+  <Step title="Reconcile against the recorded diff basis and changed files" />
+  <Step title="Record gaps" />
+  <Step title="Repair the work" />
+  <Step title="Rerun the audit" />
+  <Step title="Set Audit: PASS only when the phase is actually ready to lock" />
+</Steps>
+
+Never set `Coverage: PASS` or `Approval: PASS` for an audited phase unless the artifact ends with `Audit: PASS`.

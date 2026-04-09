@@ -1,0 +1,148 @@
+---
+title: "Memory"
+description: "The durable memory plane — what it stores, how it's organized, and when to read and update it."
+---
+
+Recursive Mode maintains a **memory plane** separate from run artifacts and control-plane docs. Memory stores project knowledge that is worth keeping across runs — domain context, reusable patterns, recurring failure modes, and capability guidance. It is intentionally distinct from the current repository state and from run-specific evidence.
+
+<Note>
+  Read `/.recursive/memory/MEMORY.md` at the start of every new session and at the start of every new run. `MEMORY.md` is the router and index for the entire memory plane — start there, then load only the memory docs relevant to your current task.
+</Note>
+
+---
+
+## What memory is for
+
+Memory answers a different question than `STATE.md` or `DECISIONS.md`:
+
+| Document | Question it answers |
+|----------|---------------------|
+| `/.recursive/STATE.md` | What is true in the codebase right now? |
+| `/.recursive/DECISIONS.md` | What decisions were made and why? |
+| `/.recursive/memory/` | What has been learned that's worth remembering across runs? |
+
+Use memory to store things that have proven durable — a recurring architectural pattern, a subsystem that frequently causes regressions, a lesson that surfaced in multiple runs. Do not use memory as a dump for session noise or one-off observations that have not been validated.
+
+---
+
+## Memory directory layout
+
+<AccordionGroup>
+  <Accordion title="/.recursive/memory/MEMORY.md">
+    The router and index for the entire memory plane. It records the memory taxonomy, retrieval guide, freshness policy, sharding rules, and an ownership map of which memory docs cover which paths. Read this first — do not load the full memory tree without reading `MEMORY.md` first.
+  </Accordion>
+  <Accordion title="/.recursive/memory/domains/">
+    Domain memory docs capture durable knowledge about specific areas of the codebase — architecture, data flows, subsystem boundaries, and ownership. Each domain doc declares `Owns-Paths` (the code surfaces it is authoritative for) and `Watch-Paths` (paths it monitors for relevant changes).
+  </Accordion>
+  <Accordion title="/.recursive/memory/patterns/">
+    Pattern docs record reusable implementation patterns that have proven effective in this repository. They declare `Watch-Paths` without owning the paths outright. Use patterns docs for things like "the standard way to add a new API endpoint" or "the approved error-handling strategy."
+  </Accordion>
+  <Accordion title="/.recursive/memory/incidents/">
+    Incident docs record recurring failure modes, past regressions, and known problem areas. When a pattern of failure is strong enough to be worth remembering, it belongs here so future runs can check for it proactively.
+  </Accordion>
+  <Accordion title="/.recursive/memory/episodes/">
+    Episode docs capture significant run histories or cross-run narratives — for example, a multi-run migration, a refactor that unfolded over several tasks, or a platform-specific investigation that took multiple iterations to resolve.
+  </Accordion>
+  <Accordion title="/.recursive/memory/skills/">
+    Skills memory is a first-class part of the memory plane. `SKILLS.md` is the skill-memory router. Durable skill knowledge is sharded under four subdirectories:
+
+    - `availability/` — environment-specific capability probes and availability notes
+    - `usage/` — stable skill fit and usage guidance
+    - `issues/` — recurring skill failures or confusing behavior
+    - `patterns/` — reusable multi-skill operating patterns
+
+    Load `SKILLS.md` and relevant skill shards when a run involves delegated review, subagent help, review bundles, or other capability-sensitive execution.
+  </Accordion>
+  <Accordion title="/.recursive/memory/archive/">
+    Deprecated memory docs that have been superseded or are no longer relevant. Archived docs are excluded from normal retrieval and kept only for historical reference.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Memory status values
+
+Every durable memory doc (except `MEMORY.md` and `SKILLS.md`) carries a `Status` field:
+
+| Status | Meaning | Used in retrieval? |
+|--------|---------|-------------------|
+| `CURRENT` | Authoritative for planning and execution | Yes |
+| `SUSPECT` | May be used as a lead but must be revalidated before trust | Yes, with caution |
+| `STALE` | Outdated; excluded from default retrieval | No |
+| `DEPRECATED` | Historical only; excluded from default retrieval | No |
+| `DRAFT` | Candidate memory, not yet durable | No |
+
+Prefer `CURRENT` docs for all planning and execution. Use `SUSPECT` docs only as leads — revalidate them before acting on them.
+
+---
+
+## When to read memory
+
+<Steps>
+  <Step title="Start of every session">
+    Read `/.recursive/STATE.md`, `/.recursive/DECISIONS.md`, and `/.recursive/memory/MEMORY.md` before doing any work. These three docs orient you to the current state of the repo and the accumulated knowledge from prior runs.
+  </Step>
+  <Step title="Start of every run">
+    Re-read all three before creating or updating run artifacts. Then use `DECISIONS.md` to identify any earlier runs relevant to the current requirement or subsystem.
+  </Step>
+  <Step title="Load relevant shards only">
+    After reading `MEMORY.md`, load only the memory docs relevant to the current task. Do not load the entire memory tree by default.
+  </Step>
+  <Step title="Load skills memory when needed">
+    If the run involves delegated review, subagent help, review bundles, or other capability-sensitive execution, load `/.recursive/memory/skills/SKILLS.md` and the relevant skill shards before planning or auditing.
+  </Step>
+</Steps>
+
+---
+
+## When memory is updated
+
+Memory is updated in **Phase 8** at run closeout. Phase 8:
+
+1. Reviews which memory docs have `Owns-Paths` or `Watch-Paths` that overlap with the validated diff.
+2. Downgrades any `CURRENT` docs touched by the diff to `SUSPECT` until semantic review against the final code, `STATE.md`, and `DECISIONS.md` is complete.
+3. Promotes durable lessons from the run into the appropriate memory subdirectory.
+4. Creates a new domain doc (or records a follow-up) for any changed code paths not covered by an existing domain doc.
+5. Records a run-local skill usage capture and decides what, if anything, is worth promoting into `/.recursive/memory/skills/`.
+
+Phase 8 produces `08-memory-impact.md` as a compact delta receipt pointing to the updated memory docs.
+
+---
+
+## Skills memory
+
+Phase 8 must update skill memory when a run teaches the repository something durable about:
+
+- skill availability in this environment
+- skill fit for a specific type of task
+- delegated review quality
+- repeated workflow friction with a skill
+
+<Tip>
+  Record skill discoveries in `/.recursive/memory/skills/` so future runs don't have to rediscover whether a subskill is available or how well it fits a particular task pattern.
+</Tip>
+
+---
+
+## Memory freshness rules
+
+Every durable memory doc includes metadata fields that support freshness tracking:
+
+```markdown
+Type: `domain`
+Status: `CURRENT`
+Scope: `Authentication subsystem`
+Owns-Paths:
+- `src/auth/**`
+Watch-Paths:
+- `src/middleware/session.ts`
+Source-Runs:
+- `/.recursive/run/42/`
+Validated-At-Commit: `a1b2c3d4`
+Last-Validated: `2025-10-01T14:00:00Z`
+Tags:
+- `auth`
+- `session`
+```
+
+If the final validated diff of a run touches a path matched by `Owns-Paths` or `Watch-Paths`, that memory doc must be reviewed in Phase 8. A doc stays `SUSPECT` until the reviewing agent has checked it against the final code, `STATE.md`, and `DECISIONS.md` and confirmed it is still accurate.

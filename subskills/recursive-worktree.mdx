@@ -1,0 +1,109 @@
+---
+title: "Worktree"
+description: "Isolate every recursive-mode run in a dedicated git worktree before implementation begins."
+---
+
+## Overview
+
+The `recursive-worktree` subskill protects your main branch by moving all implementation work into an isolated git worktree on a feature branch. Install and run it before Phase 1 of every recursive-mode run.
+
+```bash
+npx skills add try-works/recursive-mode --skill recursive-worktree --full-depth
+```
+
+## When to Use
+
+Run this subskill at the very start of every recursive-mode run — before AS-IS analysis and before any planning or implementation phase begins. All subsequent phases, including `STATE.md`, `DECISIONS.md`, and memory updates, stay on the same feature branch until merge time.
+
+## Hard Rule
+
+<Warning>
+Do not proceed with any recursive-mode phase work until all four conditions are met:
+
+1. A feature-branch worktree exists.
+2. The worktree directory is git-ignored (when it lives inside the repo).
+3. Project setup has completed successfully.
+4. A clean or explicitly acknowledged baseline test state has been recorded.
+</Warning>
+
+## Default Worktree Location
+
+When choosing where to create the worktree, use this priority order:
+
+1. Existing `.worktrees/` directory in the repo
+2. Existing `worktrees/` directory in the repo
+3. A preference documented in repo instructions
+4. Ask the user
+5. Default to `.worktrees/` if none of the above apply
+
+**Global fallback:** `~/.config/recursive-mode/worktrees/<project-name>/`
+
+## Creating the Worktree
+
+If you are currently on `main` or `master`, create a feature branch worktree automatically:
+
+```bash
+git worktree add .worktrees/<run-id> -b recursive/<run-id>
+```
+
+This creates a new directory at `.worktrees/<run-id>` checked out on a branch named `recursive/<run-id>`. All work for the run happens there.
+
+<Note>
+If the user explicitly wants to work on `main`, record that exception in `00-worktree.md`. This should be rare.
+</Note>
+
+### Useful Commands
+
+Check your current branch before creating the worktree:
+
+```bash
+git branch --show-current
+```
+
+Verify the worktree directory is git-ignored:
+
+```bash
+git check-ignore -q .worktrees || git check-ignore -q worktrees
+```
+
+## Project Setup
+
+After creating the worktree, run the setup command that matches the repo's toolchain:
+
+| Toolchain | Setup Command |
+|-----------|--------------|
+| Node.js | `npm install` |
+| Rust | `cargo build` |
+| Python | `pip install -r requirements.txt` |
+| Go | `go mod download` |
+| Maven | `mvn compile -q` |
+| Gradle | `./gradlew compileJava` |
+| .NET | `dotnet restore` |
+
+Then run the project's baseline test command and record the result in `00-worktree.md`.
+
+## Phase 0 Artifact: `00-worktree.md`
+
+The artifact lives at `/.recursive/run/<run-id>/00-worktree.md`. It must include all of the following:
+
+<AccordionGroup>
+  <Accordion title="Required checklist items">
+    - Selected worktree location
+    - Git-ignore verification result
+    - Branch name and full worktree path
+    - Setup commands executed and their output
+    - Baseline test command and result
+    - Explicit note that subsequent phases run from the worktree
+  </Accordion>
+</AccordionGroup>
+
+This artifact is the source of truth for the diff basis used by all later phases. Record the baseline reference carefully — downstream phases that calculate diffs depend on what you write here.
+
+## Integration with Later Phases
+
+After Phase 0 is complete and lock-valid:
+
+- Continue the run from inside the worktree directory.
+- All phase artifacts go to `/.recursive/run/<run-id>/`.
+- Later phase diffs compare against the baseline recorded in `00-worktree.md`.
+- Do not move back to main until the run is fully closed out.

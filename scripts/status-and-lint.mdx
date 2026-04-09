@@ -1,0 +1,94 @@
+---
+title: "Status & Lint"
+description: "Reference for recursive-status and lint-recursive-run — tools for checking run status, lock-chain validity, and artifact structure."
+sidebarTitle: "Status & Lint"
+---
+
+Use `recursive-status` to get a high-level view of a run's progress and health. Use `lint-recursive-run` to validate artifact structure in detail before locking a phase.
+
+---
+
+## recursive-status
+
+`recursive-status` shows the current state of a run: which phases are complete, which are locked, which have audit blockers, and whether the lock chain is intact.
+
+### What it shows
+
+- Phase-by-phase status (draft, pass, locked)
+- Lock-chain validity for each locked artifact
+- Audit blockers that would prevent a phase from passing
+- Missing required fields or malformed lock fields
+
+### Usage
+
+<CodeGroup>
+
+```bash Python
+python scripts/recursive-status.py --repo-root . --run-id <run-id>
+```
+
+```powershell PowerShell
+pwsh -NoProfile -File scripts/recursive-status.ps1 -RepoRoot . -RunId <run-id>
+```
+
+</CodeGroup>
+
+Replace `<run-id>` with the run directory name under `/.recursive/run/` (for example, `2026-04-09-add-search`).
+
+### Output
+
+The script prints a summary for each phase artifact found in the run directory. For each artifact you will see:
+
+- The phase filename and its current `Status` field value
+- Whether the phase is `LOCKED` and whether the `LockHash` is still valid
+- Any audit blockers (for example, a missing `Audit: PASS` line, an undeclared TDD mode, or a requirement with no disposition)
+
+<Tip>
+  Run `recursive-status` before starting a new phase to confirm all upstream artifacts are locked and their hashes are intact.
+</Tip>
+
+---
+
+## lint-recursive-run
+
+`lint-recursive-run` performs a thorough structural audit of all phase artifacts in a run. It checks artifact headers, required sections, gate completeness, lock fields, and audit-discipline rules.
+
+### What it checks
+
+- Required header fields are present and non-empty
+- Audited phases include all required audit sections (`Audit Context`, `Effective Inputs Re-read`, and others)
+- Gate fields (`Coverage`, `Approval`, `Audit`) are present and hold valid values
+- `Status: LOCKED` artifacts have both `LockedAt` and `LockHash` fields
+- Requirement traceability entries exist for every in-scope `R#` in the applicable artifacts
+- TDD mode is declared in `03-implementation-summary.md`
+- QA execution mode is declared in `05-manual-qa.md`
+- Diff basis fields are present in all diff-audited artifacts
+
+### Usage
+
+<CodeGroup>
+
+```bash Python
+python scripts/lint-recursive-run.py --repo-root . --run-id <run-id>
+```
+
+```powershell PowerShell
+pwsh -NoProfile -File scripts/lint-recursive-run.ps1 -RepoRoot . -RunId <run-id>
+```
+
+</CodeGroup>
+
+### When to run lint
+
+<Warning>
+  Run `lint-recursive-run` before locking any phase artifact. Locking a phase that has lint failures will result in a `LockHash` that is computed from an incomplete or non-conforming artifact, which is harder to correct after the fact.
+</Warning>
+
+<AccordionGroup>
+  <Accordion title="Lint passes but status still shows blockers">
+    `recursive-status` and `lint-recursive-run` check overlapping but distinct things. The status script focuses on lock-chain integrity and high-level phase progression; the lint script checks structural conformance in detail. Run both before locking a phase.
+  </Accordion>
+  <Accordion title="Lint reports a missing section in a late-phase artifact">
+    Late-phase artifacts (phases 6, 7, and 8) are compact delta receipts that point to control-plane docs. Some audit-section requirements apply to these phases; check the lint output message for the specific field or heading that is missing.
+  </Accordion>
+</AccordionGroup>

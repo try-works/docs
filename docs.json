@@ -1,0 +1,69 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "TryWorks Leather",
+  "theme": "aspen",
+  "favicon": "https://media.brand.dev/9aa60073-3fe6-44e6-a08d-cdf1c989bb4f.png",
+  "colors": {
+    "primary": "#040404"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/try-works/recursive-mode"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/workflow-overview",
+              "concepts/phases",
+              "concepts/artifacts",
+              "concepts/memory"
+            ]
+          },
+          {
+            "group": "Subskills",
+            "pages": [
+              "subskills/recursive-worktree",
+              "subskills/recursive-tdd",
+              "subskills/recursive-debugging",
+              "subskills/recursive-review-bundle",
+              "subskills/recursive-subagent"
+            ]
+          },
+          {
+            "group": "Scripts",
+            "pages": [
+              "scripts/overview",
+              "scripts/install",
+              "scripts/status-and-lint",
+              "scripts/lock-and-verify"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/starting-a-run",
+              "guides/auditing-phases",
+              "guides/delegated-review",
+              "guides/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

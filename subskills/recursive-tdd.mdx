@@ -1,0 +1,206 @@
+---
+title: "TDD"
+description: "Enforce strict RED-GREEN-REFACTOR discipline in every recursive-mode implementation phase."
+---
+
+## Overview
+
+The `recursive-tdd` subskill makes test-driven development mandatory for all Phase 3 implementation work — new features, bug fixes, refactors, and behavior changes. It enforces the cycle rigorously and requires you to record evidence in the Phase 3 artifact so recursive-mode tooling can verify compliance.
+
+```bash
+npx skills add try-works/recursive-mode --skill recursive-tdd --full-depth
+```
+
+**Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
+
+## The Iron Law
+
+<Warning>
+**NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST.**
+
+This rule has no silent exceptions. If strict RED-first flow is genuinely infeasible, you must declare `TDD Mode: pragmatic` in the Phase 3 artifact, record a concrete reason, and provide compensating validation evidence. Silence is not an option.
+</Warning>
+
+## When to Use
+
+Apply this subskill in Phase 3 for every type of implementation work:
+
+- New features
+- Bug fixes
+- Refactoring
+- Behavior changes
+
+There is no "this is too simple" exemption. There is no "under pressure" bypass. There is only strict mode or explicitly declared pragmatic mode.
+
+## The RED-GREEN-REFACTOR Cycle
+
+<Steps>
+  <Step title="RED — Write one failing test">
+    Write the smallest possible test that describes what the code should do. One behavior per test, clear name, real assertion against real code.
+
+    **Good test:**
+    ```typescript
+    test('rejects empty email with clear error message', async () => {
+      const result = await submitForm({ email: '' });
+      expect(result.error).toBe('Email is required');
+    });
+    ```
+
+    **Bad test** (tests mock behavior, not real behavior):
+    ```typescript
+    test('email validation works', async () => {
+      const mock = jest.fn().mockResolvedValue({ valid: true });
+      const result = await validateEmail(mock);
+      expect(mock).toHaveBeenCalled();
+    });
+    ```
+
+    Run the test and confirm it **fails** — not errors, fails — and for the right reason:
+
+    ```bash
+    npm test path/to/test.test.ts
+    ```
+
+    Record the failure output in the Phase 3 artifact under `RED Evidence`.
+  </Step>
+  <Step title="Verify RED — Never skip this step">
+    Confirm three things before moving on:
+
+    - The test **fails** (not errors out)
+    - The failure message matches what you expected
+    - The failure is because the feature is missing, not because of a typo
+
+    If the test passes immediately, your test is not testing what you think. Delete it and start over.
+  </Step>
+  <Step title="GREEN — Write the minimum code to pass">
+    Write the simplest possible code that makes the test pass. Nothing more.
+
+    **Good implementation:**
+    ```typescript
+    function submitForm(data: FormData) {
+      if (!data.email?.trim()) {
+        return { error: 'Email is required' };
+      }
+      // ... rest of form handling
+    }
+    ```
+
+    **Bad implementation** (adding YAGNI options not required by the test):
+    ```typescript
+    function submitForm(
+      data: FormData,
+      options?: {
+        strictMode?: boolean;
+        customValidators?: Validator[];
+        onValidationError?: (err: Error) => void;
+      }
+    ) {
+      // over-engineered before the test demanded it
+    }
+    ```
+
+    Run the test again. Confirm it passes. Record the result under `GREEN Evidence`.
+  </Step>
+  <Step title="REFACTOR — Clean up while staying green">
+    Only after the test passes: remove duplication, improve names, extract helpers. Never add new behavior during a refactor pass.
+
+    After every change, run the tests again and confirm they are still green. Record what you cleaned up in the Phase 3 artifact.
+  </Step>
+</Steps>
+
+## Pragmatic Mode
+
+When strict RED-first flow is genuinely infeasible, declare it explicitly. Do not silently skip the process.
+
+In the Phase 3 artifact, include:
+
+```markdown
+## Pragmatic TDD Exception
+
+Exception reason: [specific reason strict RED-first flow was not feasible]
+Compensating validation:
+- [extra tests, targeted manual verification, diff review, etc.]
+- `/.recursive/run/<run-id>/evidence/<supporting-file>`
+```
+
+Evidence files go under `/.recursive/run/<run-id>/evidence/`.
+
+## Phase 3 Artifact Requirements
+
+Every Phase 3 artifact must include three sections.
+
+### TDD Compliance Log
+
+```markdown
+## TDD Compliance Log
+
+TDD Mode: strict
+
+RED Evidence:
+- `/.recursive/run/<run-id>/evidence/logs/red/<file>.log`
+
+GREEN Evidence:
+- `/.recursive/run/<run-id>/evidence/logs/green/<file>.log`
+
+### Requirement R1 (Feature X)
+
+**Test:** `test/features/x.test.ts` - "should do Y when Z"
+- RED: [timestamp] - Failed as expected: [output]
+- GREEN: [timestamp] - Minimal implementation: [description]
+- REFACTOR: [timestamp] - Cleanups: [description]
+- Final state: PASS - all tests passing
+```
+
+### Coverage Gate
+
+```markdown
+## Coverage Gate
+
+- [ ] Every new function has a corresponding test
+- [ ] Every bug fix has a regression test that fails before fix
+- [ ] All RED phases documented with failure output
+- [ ] All GREEN phases documented with minimal implementation
+- [ ] All tests passing (no skipped tests)
+- [ ] No production code written before failing test
+
+TDD Compliance: PASS / FAIL
+```
+
+### Approval Gate
+
+```markdown
+## Approval Gate
+
+- [ ] TDD Compliance: PASS
+- [ ] Implementation matches Phase 3 plan
+- [ ] No code without preceding failing test
+- [ ] All tests documented in TDD Compliance Log
+
+Approval: PASS / FAIL
+```
+
+## Red Flags
+
+Stop and delete code if you encounter any of these:
+
+<AccordionGroup>
+  <Accordion title="Signs you need to start over with TDD">
+    - Code was written before the test
+    - The test passed immediately (it is not testing what you think)
+    - You planned to add tests later
+    - You described the change as "too simple to test"
+    - You cannot explain why the test failed (or why it didn't fail)
+    - The test asserts mock behavior instead of real behavior
+    - The test name contains "and" (multiple behaviors in one test)
+  </Accordion>
+</AccordionGroup>
+
+## Common Shortcuts to Reject
+
+| Excuse | Why It's Wrong |
+|--------|----------------|
+| "This is just a simple fix" | Simple code breaks. The test takes 30 seconds. |
+| "I'll test after confirming the fix" | Tests passing immediately prove nothing. You never saw the test catch the bug. |
+| "Tests after achieve the same goals" | Tests-after answer "what does this do?" Tests-first answer "what should this do?" |
+| "I already manually tested it" | Ad-hoc is not systematic. No record, can't re-run, no regression protection. |
+| "I need to explore first" | Fine. Throw away the exploration. Start TDD fresh. |

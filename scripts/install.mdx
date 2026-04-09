@@ -1,0 +1,82 @@
+---
+title: "Install Script"
+description: "Reference for install-recursive-mode — the bootstrapper that creates the /.recursive/ control-plane scaffold in your repository."
+sidebarTitle: "Install"
+---
+
+`install-recursive-mode` creates the canonical `/.recursive/` control-plane layout inside a target repository. Run it once after installing the Recursive Mode skill package to prepare any repo for recursive-mode runs.
+
+## What it does
+
+The installer performs the following actions:
+
+- Creates the `/.recursive/` control-plane directory tree
+- Upserts the canonical workflow spec into `/.recursive/RECURSIVE.md`
+- Creates the memory plane under `/.recursive/memory/` with all required subdirectories
+- Initializes `/.recursive/STATE.md` and `/.recursive/DECISIONS.md`
+- Preserves any unrelated content in files it touches
+
+## Usage
+
+<CodeGroup>
+
+```bash Python
+python scripts/install-recursive-mode.py --repo-root .
+```
+
+```powershell PowerShell
+pwsh -NoProfile -File scripts/install-recursive-mode.ps1 -RepoRoot .
+```
+
+```bash Bash
+bash scripts/install-recursive-mode.sh --repo-root .
+```
+
+</CodeGroup>
+
+Replace `.` with the path to your repository root if you are running the script from a different directory.
+
+## What gets created
+
+After running the installer, your repository will contain the following scaffold:
+
+```
+.recursive/
+├── RECURSIVE.md              # Canonical workflow spec
+├── STATE.md                  # Current repository state ledger
+├── DECISIONS.md              # Decision ledger and run index
+├── run/
+│   └── .gitkeep
+└── memory/
+    ├── MEMORY.md             # Durable memory router
+    ├── domains/
+    ├── patterns/
+    ├── incidents/
+    ├── episodes/
+    ├── archive/
+    └── skills/
+        ├── SKILLS.md         # Skill memory router
+        ├── availability/
+        ├── usage/
+        ├── issues/
+        └── patterns/
+```
+
+<Note>
+  Each memory subdirectory contains a `.gitkeep` file so the directory is tracked by Git even before any memory docs are added.
+</Note>
+
+## Idempotency
+
+The installer is safe to run multiple times. It uses marker-delimited upserts for managed blocks, so re-running it refreshes the canonical workflow spec and bridge docs without overwriting any content you have added outside those blocks. Files that already exist are not truncated or replaced.
+
+<Tip>
+  Run the installer again after upgrading the Recursive Mode skill package to pull in the latest canonical workflow spec and bridge content.
+</Tip>
+
+## Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--repo-root` / `-RepoRoot` | `.` | Path to the repository root to bootstrap |
+| `--skip-recursive-update` / `-SkipRecursiveUpdate` | `false` | Skip the `RECURSIVE.md` canonical workflow upsert |

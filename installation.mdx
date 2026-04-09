@@ -1,0 +1,156 @@
+---
+title: "Installation"
+description: "All installation options for Recursive Mode: skills CLI, Python, PowerShell, and Bash."
+---
+
+Recursive Mode is installed in two steps: add the skill package to your agent environment, then bootstrap the target repository with the scaffold.
+
+## Prerequisites
+
+Before installing, confirm you have:
+
+- A git repository to bootstrap
+- The skills CLI available (`npx skills`)
+- Python 3, PowerShell (`pwsh`), or Bash — depending on which bootstrap script you use
+- An agent environment that supports the skills CLI
+
+## Install options
+
+<Tabs>
+  <Tab title="Skills CLI (preferred)">
+    The skills CLI is the preferred way to install and manage Recursive Mode in your agent environment.
+
+    **Install the main skill**
+
+    ```bash
+    npx skills add try-works/recursive-mode
+    ```
+
+    **List everything in the package**
+
+    ```bash
+    npx skills add try-works/recursive-mode --list
+    ```
+
+    Add `--full-depth` to list nested subskills as well:
+
+    ```bash
+    npx skills add try-works/recursive-mode --list --full-depth
+    ```
+
+    **Install all included skills**
+
+    ```bash
+    npx skills add try-works/recursive-mode --skill '*' --full-depth
+    ```
+
+    **Install a single subskill**
+
+    To install only one subskill instead of the full package, pass its name with `--skill`:
+
+    ```bash
+    npx skills add try-works/recursive-mode --skill recursive-tdd --full-depth
+    ```
+
+    Replace `recursive-tdd` with any of the available subskills: `recursive-worktree`, `recursive-debugging`, `recursive-review-bundle`, or `recursive-subagent`.
+  </Tab>
+
+  <Tab title="Bootstrap scripts">
+    After the skill package is installed, run one of the bootstrap scripts to create the `/.recursive/` scaffold in your target repository.
+
+    Run the script that matches your environment from your repository root:
+
+    <CodeGroup>
+
+    ```bash Bash
+    bash "<SKILL_DIR>/scripts/install-recursive-mode.sh" --repo-root .
+    ```
+
+    ```python Python
+    python "<SKILL_DIR>/scripts/install-recursive-mode.py" --repo-root .
+    ```
+
+    ```powershell PowerShell
+    pwsh -NoProfile -File "<SKILL_DIR>/scripts/install-recursive-mode.ps1" -RepoRoot .
+    ```
+
+    </CodeGroup>
+
+    Replace `<SKILL_DIR>` with the path where the skill package was installed, and `.` with your repository root path if you are not already in it.
+
+    **Available flags**
+
+    | Script | Flag | Description |
+    | --- | --- | --- |
+    | Python | `--repo-root <path>` | Repository root path. Defaults to the current directory. |
+    | Python | `--skip-recursive-update` | Skip the canonical `RECURSIVE.md` upsert. |
+    | PowerShell | `-RepoRoot <path>` | Repository root path. Defaults to the current directory. |
+    | PowerShell | `-SkipRecursiveUpdate` | Skip the canonical `RECURSIVE.md` upsert. |
+
+    The Bash script (`install-recursive-mode.sh`) is a thin wrapper that delegates to the Python script, so it accepts the same flags as the Python version.
+
+    <Note>
+      The bootstrap scripts are safe to re-run. They upsert managed blocks and preserve any unrelated existing file content. Use them to update an existing scaffold when you upgrade the skill package.
+    </Note>
+  </Tab>
+</Tabs>
+
+## What gets installed
+
+Running the bootstrap script creates the following layout in your repository:
+
+<Accordion title="Full /.recursive/ scaffold layout">
+
+```text
+/.recursive/
+├── RECURSIVE.md          # Canonical workflow spec
+├── STATE.md              # Current repository state
+├── DECISIONS.md          # Decisions ledger
+├── run/                  # Run artifact directory
+│   └── .gitkeep
+└── memory/
+    ├── MEMORY.md         # Durable memory router
+    ├── domains/          # Stable functional-area knowledge
+    ├── patterns/         # Reusable playbooks and solution patterns
+    ├── incidents/        # Recurring failure signatures and fixes
+    ├── episodes/         # Distilled lessons from specific runs
+    ├── archive/          # Historical or deprecated memory docs
+    └── skills/
+        ├── SKILLS.md     # Skill memory router
+        ├── availability/ # Environment-specific skill availability notes
+        ├── usage/        # Stable usage guidance per skill
+        ├── issues/       # Recurring skill failures and limitations
+        └── patterns/     # Reusable multi-skill operating patterns
+```
+
+</Accordion>
+
+### Key files
+
+| File | Purpose |
+| --- | --- |
+| `/.recursive/RECURSIVE.md` | The canonical workflow contract. Your agent reads this to understand phase order, audit rules, lock rules, and memory maintenance. |
+| `/.recursive/STATE.md` | Tracks current repository state. Updated during closeout phases. |
+| `/.recursive/DECISIONS.md` | Ledger of decisions made across runs. |
+| `/.recursive/memory/MEMORY.md` | Memory router. Agents read this before loading any memory docs. |
+| `/.recursive/run/` | Each run gets a subdirectory here: `/.recursive/run/<run-id>/`. |
+
+### The memory router
+
+The memory layer under `/.recursive/memory/` stores durable project knowledge — domain context, reusable patterns, recurring incidents, and skill guidance — separately from current repository state and individual run artifacts. This separation lets the workflow distinguish between what is true right now, what happened in one run, and what has been learned across many runs.
+
+Agents load only the memory docs relevant to the current task rather than reading the full memory tree on every run.
+
+### Subskills included
+
+The package ships these installable subskills alongside the root `recursive-mode` skill:
+
+| Subskill | Purpose |
+| --- | --- |
+| `recursive-worktree` | Isolates implementation work in a dedicated git worktree |
+| `recursive-tdd` | Strict or pragmatic TDD with recorded RED/GREEN evidence |
+| `recursive-debugging` | Structured debugging with durable artifact capture |
+| `recursive-review-bundle` | Packages delegated reviews into canonical review bundles |
+| `recursive-subagent` | Records and verifies subagent contributions before acceptance |
+
+Install the full set with `--skill '*' --full-depth`, or install individual subskills by name.

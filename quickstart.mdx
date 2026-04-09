@@ -1,0 +1,100 @@
+---
+title: "Quick Start"
+description: "Get a repository running with Recursive Mode in under 5 minutes."
+---
+
+This guide walks you through installing the skill package, bootstrapping your repository, and starting your first run.
+
+<Steps>
+  <Step title="Install the skill package">
+    Add Recursive Mode to your agent environment with the skills CLI:
+
+    ```bash
+    npx skills add try-works/recursive-mode
+    ```
+
+    This installs the root `recursive-mode` skill. To see everything included in the package before installing, run:
+
+    ```bash
+    npx skills add try-works/recursive-mode --list
+    ```
+  </Step>
+
+  <Step title="Bootstrap your repository">
+    Run the installer against your target repository. Choose the script that matches your environment:
+
+    <CodeGroup>
+
+    ```bash Bash
+    bash "<SKILL_DIR>/scripts/install-recursive-mode.sh" --repo-root .
+    ```
+
+    ```python Python
+    python "<SKILL_DIR>/scripts/install-recursive-mode.py" --repo-root .
+    ```
+
+    ```powershell PowerShell
+    pwsh -NoProfile -File "<SKILL_DIR>/scripts/install-recursive-mode.ps1" -RepoRoot .
+    ```
+
+    </CodeGroup>
+
+    Replace `<SKILL_DIR>` with the path where the skill was installed. Run this command from your repository root, or pass the path explicitly with `--repo-root <path>`.
+
+    <Note>
+      The bootstrap script creates the entire `/.recursive/` scaffold in your repository, including:
+
+      - `/.recursive/RECURSIVE.md` — the canonical workflow spec
+      - `/.recursive/STATE.md` — current repository state
+      - `/.recursive/DECISIONS.md` — decisions ledger
+      - `/.recursive/memory/MEMORY.md` — durable memory router
+      - `/.recursive/memory/skills/SKILLS.md` — skill memory router
+      - `/.recursive/memory/{domains,patterns,incidents,episodes,archive}/` — memory shards
+      - `/.recursive/memory/skills/{availability,usage,issues,patterns}/` — skill memory shards
+      - `/.recursive/run/` — directory for run artifacts
+
+      The script is safe to re-run. It upserts managed blocks and preserves any unrelated existing content.
+    </Note>
+  </Step>
+
+  <Step title="Verify the scaffold">
+    Confirm the scaffold was created correctly by listing the `/.recursive/` directory:
+
+    ```bash
+    ls .recursive/
+    ```
+
+    You should see: `AGENTS.md`, `DECISIONS.md`, `RECURSIVE.md`, `STATE.md`, `memory/`, and `run/`.
+
+    The canonical workflow contract that your agent will follow lives in:
+
+    ```text
+    /.recursive/RECURSIVE.md
+    ```
+
+    If your agent needs a lightweight index of what to read under `/.recursive/`, it should start with `/.recursive/AGENTS.md`.
+  </Step>
+
+  <Step title="Start your first run">
+    Once the repository is bootstrapped and your requirements or plan live in repository files, start a run with a short command:
+
+    ```text
+    Implement the run
+    ```
+
+    Other valid entry commands:
+
+    ```text
+    Implement run 75
+    Implement the plan
+    Create a new run based on the plan
+    Start a recursive run
+    ```
+
+    <Tip>
+      Requirements stay in repository documents — not in prompts. Keep your commands short and command-like. The agent reads the relevant repo files to understand what to do.
+    </Tip>
+
+    The agent creates a run directory under `/.recursive/run/<run-id>/` and begins progressing through the audited phases defined in `/.recursive/RECURSIVE.md`.
+  </Step>
+</Steps>

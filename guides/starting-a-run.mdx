@@ -1,0 +1,92 @@
+---
+title: "Starting a Run"
+description: "How to start and resume Recursive Mode runs."
+---
+
+Once your repo is bootstrapped and your requirements live in a repository file, you can start or resume work with a short command. Prompts are commands — not specifications. The actual requirements and plan must always live in repo documents.
+
+<Note>
+Keep your prompts short and command-like. Place requirements, acceptance criteria, and implementation plans in repository documents and reference those paths in your prompt. Do not paste specifications into the chat.
+</Note>
+
+## Starting a new run
+
+<Steps>
+  <Step title="Ensure the repo is bootstrapped">
+    The `/.recursive/` scaffold must exist before any run can begin. If it's missing, run the bootstrap installer:
+
+    ```bash
+    python scripts/install-recursive-mode.py --repo-root .
+    ```
+
+    The scaffold includes `/.recursive/RECURSIVE.md`, `/.recursive/STATE.md`, `/.recursive/DECISIONS.md`, the memory plane under `/.recursive/memory/`, and the run root at `/.recursive/run/`.
+  </Step>
+
+  <Step title="Place your requirements in a repo document">
+    Write your requirements in a file inside the repository — for example, a requirements doc or a planned feature spec. Do not paste requirements into the prompt. The agent will read from that file.
+  </Step>
+
+  <Step title="Send a short start command">
+    Trigger the agent with a command like one of these:
+
+    ```text
+    Implement the run
+    Implement run 75
+    Implement the plan
+    Start a recursive run
+    Create a new run based on the plan
+    ```
+
+    The agent reads `/.recursive/RECURSIVE.md`, `/.recursive/STATE.md`, `/.recursive/DECISIONS.md`, and the relevant memory docs before proceeding.
+  </Step>
+
+  <Step title="The agent creates a run folder">
+    A new run folder is created at:
+
+    ```text
+    /.recursive/run/<run-id>/
+    ```
+
+    This folder becomes the durable record for the entire run. Every phase artifact is written here.
+  </Step>
+
+  <Step title="Work begins with Phase 0, then proceeds through phases">
+    The agent starts with Phase 0 (worktree setup in `00-worktree.md`), then moves through:
+
+    - Phase 0 — Requirements (`00-requirements.md`)
+    - Phase 1 — AS-IS analysis (`01-as-is.md`)
+    - Phase 2 — TO-BE plan (`02-to-be-plan.md`)
+    - Phase 3 — Implementation (`03-implementation-summary.md`)
+    - Phase 3.5 — Code review (`03.5-code-review.md`)
+    - Phase 4 — Tests (`04-test-summary.md`)
+    - Phase 5 — Manual QA (`05-manual-qa.md`)
+    - Phases 6–8 — Decisions, state, and memory closeout
+  </Step>
+</Steps>
+
+## Resuming a run
+
+If a run is interrupted — by session end, context limits, or a manual pause — you can resume it:
+
+| Situation | Command |
+|---|---|
+| Exactly one active or incomplete run exists | `Implement the run` |
+| Multiple runs exist | `Implement run 75` |
+| Resuming from a specific plan artifact | `Implement the plan at /.recursive/run/75/02-to-be-plan.md` |
+
+The agent re-reads `/.recursive/STATE.md`, `/.recursive/DECISIONS.md`, and `/.recursive/memory/MEMORY.md` at the start of every resumed session to rebuild context from the repo, not from chat history.
+
+## Command interpretation rules
+
+The agent resolves ambiguous commands using these rules:
+
+- **Explicit run ID** — use that run
+- **No run ID + one active run** — resume it
+- **Reference to a plan** — create a new run only when a unique source plan or requirements artifact can be identified from repo docs
+- **Ambiguous** — the agent asks you for the run ID or the exact repo path to the plan or requirements artifact
+
+If you ever need to check which runs are active:
+
+```bash
+python scripts/recursive-status.py --repo-root .
+```

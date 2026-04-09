@@ -1,0 +1,164 @@
+---
+title: "Phases"
+description: "Detailed reference for every phase in a Recursive Mode run — purpose, artifact file, and audit requirements."
+---
+
+A run moves through phases in order. Each phase reads the previous phase's locked artifact as its primary input and produces its own artifact before the next phase can begin. You cannot skip phases or edit a locked artifact — corrections flow forward through addenda.
+
+## Phase reference
+
+| Phase | Name | Artifact file | Audited |
+|-------|------|---------------|---------|
+| 0 | Worktree setup | `00-worktree.md` | No |
+| 0 | Requirements | `00-requirements.md` | No |
+| 1 | AS-IS analysis | `01-as-is.md` | Yes |
+| 1.5 | Root cause *(debug runs only)* | `01.5-root-cause.md` | Yes |
+| 2 | TO-BE plan | `02-to-be-plan.md` | Yes |
+| 3 | Implementation | `03-implementation-summary.md` | Yes |
+| 3.5 | Code review *(optional)* | `03.5-code-review.md` | Yes |
+| 4 | Test summary | `04-test-summary.md` | Yes |
+| 5 | Manual QA | `05-manual-qa.md` | No (gate varies by mode) |
+| 6 | Decisions update | `06-decisions-update.md` | Yes |
+| 7 | State update | `07-state-update.md` | Yes |
+| 8 | Memory impact | `08-memory-impact.md` | Yes |
+
+All artifacts live under `/.recursive/run/<run-id>/`.
+
+---
+
+## Phase 0 — Worktree setup
+
+**Artifact:** `/.recursive/run/<run-id>/00-worktree.md`
+
+Phase 0 (worktree) creates an isolated git worktree at `.worktrees/<run-id>/` so all implementation work happens off the main branch. It records the diff basis that every later audited phase uses for reconciliation — baseline type, baseline reference, comparison reference, and the normalized diff command. It also verifies the project builds and all tests pass before any changes are made.
+
+<Warning>
+  Never implement changes on main or master without explicit consent. Phase 0 exists to prevent this.
+</Warning>
+
+`00-worktree.md` must lock before Phase 1 begins. All subsequent phases execute inside the worktree context.
+
+---
+
+## Phase 0 — Requirements
+
+**Artifact:** `/.recursive/run/<run-id>/00-requirements.md`
+
+The requirements artifact is the only phase input that comes from outside the run folder — you create it from your task description, issue tracker, or planning document before starting the run. It defines the in-scope requirements (`R1`, `R2`, …) that every downstream phase must address.
+
+<Tip>
+  Keep requirements in the file, not in prompts. Prompts should reference the file path, not duplicate its content.
+</Tip>
+
+---
+
+## Phase 1 — AS-IS analysis
+
+**Artifact:** `/.recursive/run/<run-id>/01-as-is.md`
+
+Phase 1 reads the requirements and produces a grounded analysis of the current codebase state as it relates to those requirements. The audit must re-read any earlier run artifacts relevant to the same subsystem or architectural area, record which upstream artifacts were reviewed, and confirm the analysis reflects what is actually true in the repo — not what was previously assumed.
+
+---
+
+## Phase 1.5 — Root cause *(debug runs only)*
+
+**Artifact:** `/.recursive/run/<run-id>/01.5-root-cause.md`
+
+Use Phase 1.5 when the requirement involves debugging a bug, test failure, or unexpected behavior. It reads `01-as-is.md` and produces a root cause analysis before any fix is planned.
+
+<Warning>
+  Do not write or plan a fix before Phase 1.5 is locked. The audit must confirm the root cause — not just the symptom — and must fail if the fix strategy is still guesswork.
+</Warning>
+
+Phase 1.5 is optional. When present, it must lock before Phase 2 begins, and Phase 2 takes `01.5-root-cause.md` as an additional input.
+
+---
+
+## Phase 2 — TO-BE plan
+
+**Artifact:** `/.recursive/run/<run-id>/02-to-be-plan.md`
+
+Phase 2 produces an ExecPlan-grade implementation plan based on the AS-IS analysis (and root cause, when present). The audit fails unless every in-scope requirement is planned, targeted files and modules are concrete, and tests and QA coverage are specific enough for later diff reconciliation.
+
+Phase 2 owns planned scope only. If a later phase discovers that the real diff surface differs from what was planned, that drift is reconciled in Phase 3 — not by retroactively editing Phase 2.
+
+---
+
+## Phase 3 — Implementation
+
+**Artifact:** `/.recursive/run/<run-id>/03-implementation-summary.md`
+
+Phase 3 executes the plan. It must declare a TDD mode:
+
+- **Strict** (default) — requires explicit RED and GREEN evidence paths under `/.recursive/run/<run-id>/evidence/`.
+- **Pragmatic** — requires an explicit exception rationale plus compensating validation evidence.
+
+The audit reconciles the requirements, the plan, actual changed files against claimed scope, and required implementation and test evidence. All implementation work happens inside the isolated worktree.
+
+---
+
+## Phase 3.5 — Code review *(optional)*
+
+**Artifact:** `/.recursive/run/<run-id>/03.5-code-review.md`
+
+Use Phase 3.5 for high-risk changes, complex multi-agent sub-phases, or when extra confidence is needed before testing. When present, it must lock before Phase 4.
+
+Delegated review is valid only when accompanied by a full context bundle stored under `/.recursive/run/<run-id>/evidence/review-bundles/`. If blocking issues are found, Phase 3.5 fails and the run returns to Phase 3 for repair.
+
+---
+
+## Phase 4 — Test summary
+
+**Artifact:** `/.recursive/run/<run-id>/04-test-summary.md`
+
+Phase 4 runs the test suite and records results. Before running tests, it performs a pre-test implementation audit against requirements, plan, current diff ownership, and required test files. If that audit finds unfinished in-scope work, the run returns to Phase 3 before relying on test results.
+
+---
+
+## Phase 5 — Manual QA
+
+**Artifact:** `/.recursive/run/<run-id>/05-manual-qa.md`
+
+Phase 5 validates the implemented system against the QA scenarios defined in `02-to-be-plan.md`. You must declare a QA execution mode:
+
+| Mode | Sign-off required | Execution record required |
+|------|------------------|--------------------------|
+| `human` | Yes (user) | No |
+| `agent-operated` | No | Yes |
+| `hybrid` | Yes (user) | Yes |
+
+Human and hybrid modes pause and wait for your explicit sign-off before proceeding to closeout.
+
+---
+
+## Phase 6 — Decisions update
+
+**Artifact:** `/.recursive/run/<run-id>/06-decisions-update.md`
+
+Phase 6 appends a new entry to `/.recursive/DECISIONS.md` — the global decision ledger — documenting what changed and why. The phase artifact is a compact delta receipt that points to the ledger entry; it does not duplicate `DECISIONS.md` content.
+
+The audit verifies the ledger entry matches the run folder, reviewed diff-owned paths, and validated outcomes.
+
+---
+
+## Phase 7 — State update
+
+**Artifact:** `/.recursive/run/<run-id>/07-state-update.md`
+
+Phase 7 updates `/.recursive/STATE.md` to reflect what is true in the codebase now. The phase artifact is a compact delta receipt summarizing what changed in the state doc.
+
+<Note>
+  `STATE.md` must reflect what is actually true — not what was intended. The audit verifies this against the validated diff and final codebase state.
+</Note>
+
+---
+
+## Phase 8 — Memory impact
+
+**Artifact:** `/.recursive/run/<run-id>/08-memory-impact.md`
+
+Phase 8 reviews the memory plane under `/.recursive/memory/` and updates it based on what the run taught the repository. It records a run-local skill usage capture, reviews affected memory docs for freshness, and promotes durable lessons into the appropriate memory subdirectory.
+
+Any memory doc whose `Owns-Paths` or `Watch-Paths` overlap with the validated diff must be reviewed. `CURRENT` docs touched by the diff are downgraded to `SUSPECT` until semantic review against final code, `STATE.md`, and `DECISIONS.md` is complete.
+
+See [Memory](/concepts/memory) for the full memory model.

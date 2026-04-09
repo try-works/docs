@@ -1,0 +1,105 @@
+{
+  "projectType": "framework",
+  "projectName": "Recursive Mode",
+  "projectDescription": "An installable skill package that gives AI agents a structured, file-backed workflow for requirements, planning, implementation, testing, review, and memory across multi-phase engineering runs.",
+  "theme": "aspen",
+  "primaryColor": "#040404",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/workflow-overview",
+              "concepts/phases",
+              "concepts/artifacts",
+              "concepts/memory"
+            ]
+          },
+          {
+            "group": "Subskills",
+            "pages": [
+              "subskills/recursive-worktree",
+              "subskills/recursive-tdd",
+              "subskills/recursive-debugging",
+              "subskills/recursive-review-bundle",
+              "subskills/recursive-subagent"
+            ]
+          },
+          {
+            "group": "Scripts",
+            "pages": [
+              "scripts/overview",
+              "scripts/install",
+              "scripts/status-and-lint",
+              "scripts/lock-and-verify"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/starting-a-run",
+              "guides/auditing-phases",
+              "guides/delegated-review",
+              "guides/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "File-backed, multi-phase agent workflow with durable run artifacts",
+    "Audited phase progression with draft → audit → repair → re-audit → lock cycle",
+    "Isolated git worktree setup for every implementation run",
+    "Strict TDD enforcement with RED/GREEN evidence recording",
+    "Systematic root-cause debugging phase (Phase 1.5)",
+    "Delegated code review via canonical review bundles",
+    "Subagent support with mandatory controller verification",
+    "Durable memory plane for domain knowledge, patterns, and lessons",
+    "Cross-platform installer scripts (Python, PowerShell, Bash)",
+    "Status, lint, lock, and hygiene utility scripts"
+  ],
+  "publicApiSurface": [
+    "npx skills add try-works/recursive-mode",
+    "scripts/install-recursive-mode.py --repo-root .",
+    "scripts/install-recursive-mode.ps1 -RepoRoot .",
+    "scripts/install-recursive-mode.sh --repo-root .",
+    "scripts/recursive-init.py",
+    "scripts/recursive-init.ps1",
+    "scripts/recursive-status.py",
+    "scripts/recursive-status.ps1",
+    "scripts/lint-recursive-run.py",
+    "scripts/lint-recursive-run.ps1",
+    "scripts/recursive-lock.py",
+    "scripts/recursive-lock.ps1",
+    "scripts/verify-locks.py",
+    "scripts/verify-locks.ps1",
+    "scripts/recursive-review-bundle.py",
+    "scripts/recursive-review-bundle.ps1",
+    "scripts/recursive-subagent-action.py",
+    "scripts/recursive-subagent-action.ps1",
+    "scripts/recursive-closeout.py",
+    "scripts/recursive-closeout.ps1",
+    "scripts/check-reusable-repo-hygiene.py",
+    "scripts/check-reusable-repo-hygiene.ps1",
+    "SKILL.md (root entrypoint)",
+    "skills/recursive-worktree/SKILL.md",
+    "skills/recursive-tdd/SKILL.md",
+    "skills/recursive-debugging/SKILL.md",
+    "skills/recursive-review-bundle/SKILL.md",
+    "skills/recursive-subagent/SKILL.md"
+  ]
+}

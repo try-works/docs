@@ -3,7 +3,7 @@ title: "Memory"
 description: "The durable memory plane — what it stores, how it's organized, and when to read and update it."
 ---
 
-Recursive Mode maintains a **memory plane** separate from run artifacts and control-plane docs. Memory stores project knowledge that is worth keeping across runs — domain context, reusable patterns, recurring failure modes, and capability guidance. It is intentionally distinct from the current repository state and from run-specific evidence.
+recursive-mode maintains a **memory plane** separate from run artifacts and control-plane docs. Memory stores project knowledge that is worth keeping across runs — domain context, reusable patterns, recurring failure modes, and capability guidance. It is intentionally distinct from the current repository state and from run-specific evidence.
 
 <Note>
   Read `/.recursive/memory/MEMORY.md` at the start of every new session and at the start of every new run. `MEMORY.md` is the router and index for the entire memory plane — start there, then load only the memory docs relevant to your current task.

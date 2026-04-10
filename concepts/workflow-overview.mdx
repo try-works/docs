@@ -1,18 +1,18 @@
 ---
 title: "Workflow overview"
 sidebarTitle: "Overview"
-description: "The big picture of how Recursive Mode works — runs, phases, artifacts, and feedback loops."
+description: "The big picture of how recursive-mode works — runs, phases, artifacts, and feedback loops."
 ---
 
 ## The problem: context rot
 
 When you work with an AI agent over many sessions, important decisions, requirements, and implementation rationale accumulate in chat history — and then disappear. The agent rediscovers the same facts, makes contradictory choices, and loses track of what was actually agreed. This is context rot.
 
-Recursive Mode solves context rot by moving the source of truth out of chat and into repository files. Requirements live in a file. Plans live in a file. Implementation evidence lives in a file. The agent reads those files at the start of every run; it does not rely on remembering what was discussed.
+recursive-mode solves context rot by moving the source of truth out of chat and into repository files. Requirements live in a file. Plans live in a file. Implementation evidence lives in a file. The agent reads those files at the start of every run; it does not rely on remembering what was discussed.
 
 ## Prompts are commands, not specs
 
-In Recursive Mode, prompts stay short and command-like:
+In recursive-mode, prompts stay short and command-like:
 
 ```text
 Implement the run

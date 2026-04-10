@@ -15,6 +15,10 @@ recursive-mode solves it by making static repository documents the source of tru
 
 recursive-mode builds on a couple of simple principles: Each development phase produces one locked output document. Each phase uses the previous phases' output as its input. Before exiting a phase and preceeding to next, a certain set of criteria, based on the workflow as well as previous phase docs, must be fulfilled and if not, the agent needs to iterate until it reaches exit criteria.
 
+<Tip>
+recursive-mode is "recursive" because the process continuously revisits its own outputs. Each phase consumes artifacts from earlier phases. Audited phases loop through `draft → audit → repair → re-audit` until the work is genuinely ready. Closeout phases feed validated lessons back into decisions, state, and memory so future runs start from better context. Later work always refers back to earlier work.
+</Tip>
+
 ## Docs for development and traceability
 
 With recursive-mode, all information that is important to the development workflow is stored in durable docs. This is the folder structure of a recursive run:
@@ -75,7 +79,7 @@ The main point is - keep valuable information out of chat and in docs.
 
 ## What's included
 
-Recursive Mode ships these installable skills:
+recursive-mode ships these installable skills:
 
 | Skill | Purpose |
 |---|---|
@@ -98,8 +102,4 @@ Or install a single subskill:
 npx skills add try-works/recursive-mode --skill recursive-tdd --full-depth
 ```
 
-## How recursion works in practice
 
-<Tip>
-Recursive Mode is "recursive" not because of a programming trick, but because the process continuously revisits its own outputs. Each phase consumes artifacts from earlier phases. Audited phases loop through `draft → audit → repair → re-audit` until the work is genuinely ready. Closeout phases feed validated lessons back into decisions, state, and memory so future runs start from better context. Later work always refers back to earlier work.
-</Tip>

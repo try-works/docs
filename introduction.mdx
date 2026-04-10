@@ -1,15 +1,48 @@
 ---
 title: "Introduction"
-description: "What Recursive Mode is, who it's for, and the problems it solves."
+description: "What recursive-mode is, who it's for, and the problems it solves."
 ---
 
-Recursive Mode is an installable skill package for structured AI-assisted software development. It gives your agent a file-backed workflow for requirements, planning, implementation, testing, review, closeout, and memory — instead of leaving that entire process scattered across chat history.
+recursive-mode is an installable skill package for structured AI-assisted software development. It gives your agent a file-backed workflow for requirements, planning, implementation, testing, review, closeout, and memory — instead of leaving that entire process scattered across chat history.
 
-## The problem: context rot
+## Solving the problem of context rot
 
 Long-running agent work has a common failure mode: requirements, decisions, and plans live in the conversation. Once that session ends or the context window overflows, the agent loses track of what was decided, what was implemented, and why. This is **context rot**.
 
-Recursive Mode solves it by making static repository documents the source of truth for every phase. Requirements, plans, and evidence live in files that persist across sessions, contributors, and repositories. Prompts become short commands, not specifications.
+recursive-mode solves it by making static repository documents the source of truth for every phase. Requirements, plans, and evidence live in files that persist across sessions, contributors, and repositories. Prompts become short commands, not specifications.
+
+## Recursion in practice
+
+recursive-mode builds on a couple of simple principles: Each development phase produces one locked output document. Each phase uses the previous phases' output as its input. Before exiting a phase and preceeding to next, a certain set of criteria, based on the workflow as well as previous phase docs, must be fulfilled and if not, the agent needs to iterate until it reaches exit criteria.
+
+## Docs for development and traceability
+
+With recursive-mode, all information that is important to the development workflow is stored in durable docs. This is the folder structure of a recursive run:
+
+.recursive/run/00-my-first-requirements/
+- 00-requirements.md (user-created)
+- 01-as-is.md
+- 02-to-be.md
+- 03-implementation-summary.md
+- 04-manual-qa.md (test cases are pre-defined; the user enters pass/fail and notes in the doc)
++ /addenda/ if needed
++ /memory/ for the agent
+
+Global STATE.md and DECISIONS.md are read at the start of and updated at the end of each run.
+
+## Docs for humans and machines, and for fine-tuning and self-distillation
+
+Docs are human-readable and machine-readable. They offer the best traceability out of any skill or harness in 2026. You entire rationale for building the way you did (or what the agent decided to do) is clearly recorded and referenceable.
+
+The run docs together with the code diff in the worktrees become a rich dataset for auto-training or finetuning a model against your codebase. 
+
+## Chat is CLI
+
+Chat is used the way to should be, for commands only. You can start by using plan mode and refine the plan with the agent and then ask it to turn the plan into a new recursive run. 
+
+You can also create the run folder and requirements doc yourself, then ask the agent to "implement run 01". 
+
+The main point is - keep valuable information out of chat and in docs.
 
 ## Who it's for
 

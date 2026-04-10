@@ -23,17 +23,6 @@ recursive-mode is "recursive" because the process continuously revisits its own 
 
 With recursive-mode, all information that is important to the development workflow is stored in durable docs. This is the folder structure of a recursive run:
 
-.recursive/run/00-my-first-requirements/
-- 00-requirements.md (user-created)
-- 01-as-is.md
-- 02-to-be.md
-- 03-implementation-summary.md
-- 04-manual-qa.md (test cases are pre-defined; the user enters pass/fail and notes in the doc)
-+ /addenda/ if needed
-+ /memory/ for the agent
-
-
-
 ```text
 .recursive/
 ├── /memory/              # Structured memory bank
@@ -49,7 +38,6 @@ With recursive-mode, all information that is important to the development workfl
     └── addenda/                  # Addenda docs added as needed
 
 ```
-
 
 Global STATE.md and DECISIONS.md are read at the start of and updated at the end of each run.
 

@@ -32,6 +32,25 @@ With recursive-mode, all information that is important to the development workfl
 + /addenda/ if needed
 + /memory/ for the agent
 
+
+
+```text
+.recursive/
+├── /memory/              # Structured memory bank
+├── RECURSIVE.md          # Canonical workflow spec
+├── STATE.md              # Current repository state
+├── DECISIONS.md          # Decisions ledger
+├── run/00-my-first-requirements/                  
+    ├── 00-requirements.md          # Stable functional-area knowledge
+    ├── 01-as-is.md                 # Reusable playbooks and solution patterns
+    ├── 02-to-be.md                 # Recurring failure signatures and fixes
+    ├── 03-implementation-summary.md  # Distilled lessons from specific runs
+    ├── 04-manual-qa.md           # Historical or deprecated memory docs
+    └── addenda/                  # Addenda docs added as needed
+
+```
+
+
 Global STATE.md and DECISIONS.md are read at the start of and updated at the end of each run.
 
 ## Docs for humans and machines, and for fine-tuning and self-distillation

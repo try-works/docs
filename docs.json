@@ -10,7 +10,13 @@
     "primary": {
       "type": "github",
       "href": "https://github.com/try-works/recursive-mode"
-    }
+    },
+    "links": [
+      {
+        "label": "Twitter",
+        "href": "https://x.com/trydotworks"
+      }
+    ]
   },
   "navigation": {
     "tabs": [
@@ -65,5 +71,15 @@
         ]
       }
     ]
+  },
+  "description": "Powerful recursive workflow for agentic engineering (and fine-tuning)",
+  "fonts": {
+    "family": "Geist"
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/trydotworks",
+      "website": "https://try.works"
+    }
   }
 }
